@@ -12,7 +12,7 @@ which is a bash-script with the same purpose, and tries to maintain the same fun
 It features:
 
 	* Works excellent where other software has proven unusable/problematic(xbacklight etc) thanks to how
-	  it operates internally.
+	  it operates internally, and the fact that it doesn't need X. 
 
 	* Automatically figures out the best controller to use depending on its resolution, making full use
 	  of the underlying hardware. 

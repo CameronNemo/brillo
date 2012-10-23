@@ -1,3 +1,10 @@
+/*	
+ * 	Licensed under the GNU Public License version 3.
+ *	Read attached LICENSE
+ * 	Copyright (C) 2012 - Fredrik Haikarainen
+ * 	Fredrik.haikarainen@gmail.com
+ */
+
 #define _GNU_SOURCE
 
 #include <stdio.h>

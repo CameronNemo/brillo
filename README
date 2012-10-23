@@ -1,3 +1,50 @@
-light
+Light 0.4
+---------
 
-Program to control backlight-controllers in linux system.
+ - Description ---
+
+"Light" is a program to control backlight-controllers in GNU/Linux-systems. It is the successor of "LightScript",
+which is a bash-script with the same purpose, and tries to maintain the same functionality.
+
+It features:
+
+	* Works excellent where other software has proven unusable/problematic(xbacklight etc) thanks to how
+	  it operates internally.
+
+	* Automatically figures out the best controller to use depending on its resolution, making full use
+	  of the underlying hardware. 
+
+	* Written in ANSI C89 - which practically makes it as portable as a program can be, with the exception
+	  of the glibc-dependency.
+
+
+ - Usage ---
+
+Executed without arguments, light prints usage-information that is pretty self-explanatory.
+
+Examples:
+
+	Set brightness to 40 percent:
+	light 40
+
+	Increase brightness with 10% and supress output:
+	light -aq 10	
+
+	Print the maximum-brightness of the best controller and exit:
+	light -m
+
+
+ - Installation ---
+
+	1. Install the neccesary buildtools (make, gcc etc)
+
+	2. Type "make stable"
+
+	3. Success? Copy/symlink the "light"-executable to /usr/bin.
+
+	4. Enjoy!
+
+
+ - Contact ---
+
+In case of any feedback(problems/bugs, feature-requests etc) contact me directly on fredrik.haikarainen@gmail.com

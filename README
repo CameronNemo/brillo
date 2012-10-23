@@ -1,6 +1,9 @@
 Light 0.4
 ---------
 
+Copyright (C) 2012 - Fredrik Haikarainen
+Program is licensed under the GPLv3 (Read LICENSE before contiuing)
+
  - Description ---
 
 "Light" is a program to control backlight-controllers in GNU/Linux-systems. It is the successor of "LightScript",
@@ -17,6 +20,8 @@ It features:
 	* Written in ANSI C89 - which practically makes it as portable as a program can be, with the exception
 	  of the glibc-dependency.
 
+	* Has a default minimumcap of 5% brightness, easily changeable in /etc/light/minlight. This to prevent
+	  screens from turning pitchblack, since some controllers do that on 0 brightness.
 
  - Usage ---
 
@@ -43,6 +48,8 @@ Examples:
 	3. Success? Copy/symlink the "light"-executable to /usr/bin.
 
 	4. Enjoy!
+
+	5. Optionally create /etc/light/minlight to set a minimumcap.
 
 
  - Contact ---

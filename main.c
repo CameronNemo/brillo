@@ -191,7 +191,7 @@ controller* get_best_controller(fetch_result* res){
 }
 
 void usage(){
-	printf("Usage: light [-qcas] <value>\n\n\t-q:\t Run quiet, supresses output.\n\t-c:\t Prints the current brightness in percent and exits.(Not precise)\n\t-p:\t Prints the current brightness directly from controller and exits. (Precise)\n\t-m:\t Prints the max brightness directly from controller and exits. (To be used side-by-side with -p)\n\t-a:\t Add the value instead of setting it.\n\t-s:\t Subtract the value instead of setting it.\n\n\t<value>\t Brightness wanted in percent.\n\n");
+	printf("Usage: light [-qcaspm] <value>\n\n\t-q:\t Run quiet, supresses output.\n\t-c:\t Prints the current brightness in percent and exits.(Not precise)\n\t-p:\t Prints the current brightness directly from controller and exits. (Precise)\n\t-m:\t Prints the max brightness directly from controller and exits. \n\t-a:\t Add the value instead of setting it.\n\t-s:\t Subtract the value instead of setting it.\n\n\t<value>\t Brightness wanted in percent.\n\n");
 }
 
 int main(int argc, char **argv) {
@@ -267,7 +267,7 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 	if(q == FALSE)
-		printf("Light v0.4 - Fredrik Haikarainen\n");
+		printf("Light 0.4 - Fredrik Haikarainen\n");
 	
 	/* Get and check minlight */
 	

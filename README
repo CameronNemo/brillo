@@ -1,4 +1,4 @@
-Light 0.4
+Light 0.7
 ---------
 
 Copyright (C) 2012 - Fredrik Haikarainen
@@ -15,9 +15,10 @@ It features:
 	  it operates internally, and the fact that it doesn't need X. 
 
 	* Automatically figures out the best controller to use depending on its resolution, making full use
-	  of the underlying hardware. 
+	  of the underlying hardware, if you have a "bad system" the controller to use is overridable by the
+	  /etc/light/override-file
 
-	* Written in ANSI C89 - which practically makes it as portable as a program can be, with the exception
+	* Written in ANSI-C89 -- which practically makes it as portable as a program can be, with the exception
 	  of the glibc-dependency.
 
 	* Has a default minimumcap of 5% brightness, easily changeable in /etc/light/minlight. This to prevent
@@ -45,11 +46,16 @@ Examples:
 
 	2. Type "make stable"
 
-	3. Success? Copy/symlink the "light"-executable to /usr/bin.
+	3. Optionally make the light-binary executable by regular users by running makeexec.sh as root
+	
+	4. Create a symbolic link to /usr/bin
+	
+	5. Enjoy!
 
-	4. Enjoy!
+	Optional:
+	
+	6. Create /etc/light/minlight to set a minimumcap (5 is good for highresolution controllers)
 
-	5. Optionally create /etc/light/minlight to set a minimumcap.
 
 
  - Contact ---

@@ -1,63 +1,95 @@
-Light 0.7
----------
+Light 0.9
 
-Copyright (C) 2012 - Fredrik Haikarainen
-Program is licensed under the GPLv3 (Read LICENSE before contiuing)
+Copyright (C) 2012 - 2014, Fredrik Haikarainen
+This is free software, see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE
 
- - Description ---
+--------------------------------------------------------------------------
 
-"Light" is a program to control backlight-controllers in GNU/Linux-systems. It is the successor of "LightScript",
-which is a bash-script with the same purpose, and tries to maintain the same functionality.
+Description:
 
-It features:
-
-	* Works excellent where other software has proven unusable/problematic(xbacklight etc) thanks to how
-	  it operates internally, and the fact that it doesn't need X. 
-
-	* Automatically figures out the best controller to use depending on its resolution, making full use
-	  of the underlying hardware, if you have a "bad system" the controller to use is overridable by the
-	  /etc/light/override-file
-
-	* Written in ANSI-C89 -- which practically makes it as portable as a program can be, with the exception
-	  of the glibc-dependency.
-
-	* Has a default minimumcap of 5% brightness, easily changeable in /etc/light/minlight. This to prevent
-	  screens from turning pitchblack, since some controllers do that on 0 brightness.
-
- - Usage ---
-
-Executed without arguments, light prints usage-information that is pretty self-explanatory.
-
-Examples:
-
-	Set brightness to 40 percent:
-	light 40
-
-	Increase brightness with 10% and supress output:
-	light -aq 10	
-
-	Print the maximum-brightness of the best controller and exit:
-	light -m
+"Light"  is  a program  to control backlight controllers  under GNU/Linux,
+it is the successor of lightscript, which was a bash script with the  same
+purpose, and tries to maintain the same functionality.
 
 
- - Installation ---
+Features:
 
-	1. Install the neccesary buildtools (make, gcc etc)
+  * Works excellent where other software has been proven to be unusable or
+    problematic, thanks to how it operates internally and to the fact that
+    it does not rely on xorg.
 
-	2. Type "make stable"
+  * Can automatically figure out the best controller to use,   making full
+    use of underlying hardware.
 
-	3. Optionally make the light-binary executable by regular users by running makeexec.sh as root
-	
-	4. Create a symbolic link to /usr/bin
-	
-	5. Enjoy!
-
-	Optional:
-	
-	6. Create /etc/light/minlight to set a minimumcap (5 is good for highresolution controllers)
+  * Possibility to set a minimum brightness value, as some controllers set
+    the screen to be pitch black at a vaĺue of 0 (or higher).
 
 
+Installation:
+  
+  If you run ArchLinux, there is a package in the AUR called light.
 
- - Contact ---
+  1) Install neccessary build tools (gcc, make etc.)
 
-In case of any feedback(problems/bugs, feature-requests etc) contact me directly on fredrik.haikarainen@gmail.com
+  2) Type `make`
+
+  3) Run makeexec.sh as root to give regular users the ability to run the
+     program with root permissions.
+
+  4) Copy/create a symbolic link to the executable to /usr/bin
+
+  5) Enjoy!
+
+
+Usage:
+
+  This application has 4 different operation modes, which are:
+
+    -G:   Get, which reads/gets brightness/data from controllers/files
+    -S:   Set, whichs writes/sets brightness/data to controllers/files
+    -A:   Add, does like -S but instead adds the value
+    -U:   Subtract, does like -S but instead subtracts the value
+
+  When used by themselves   operate on the brightness of a controller that
+  is selected automatically. S, A and U needs another argument,   which is
+  the value to set/add/subtract.   This can be specified either in percent
+  or in raw values,  but remember to specify the value mode if you want to
+  write raw values.
+
+  The value modes are set with -p for percent (default), and -r for raw.
+
+  As you can not only read/write the brightness of controllers,    you may
+  also specify a target to read/write from/to:
+
+    -b:   Current brightness of selected controller
+    -m:   Maximum brightness of selected controller
+    -c:   Minimum brightness (cap) of selected controller
+
+  Finally, you can either use the built-in controller selection to get the
+  controller with the maximum precision,   or you can specify one manually
+  with the -s flag. The -a flag will force automatic mode and is default.
+
+  NOTE:
+  This application will only print errors if you are using it incorrectly.
+  If something goes wrong, and you can't figure out why,   try setting the
+  verbosity flag:
+
+    -v 0: No debug output
+    -v 1: Errors
+    -v 2: Errors, warnings
+    -v 3: Errors, warnings, notices
+
+  Examples:
+
+    * Get the current brightness in percent
+    
+      light -G
+
+    * Increase brightness by 5 percent
+
+      light -A 5
+
+    * Set the minimum cap to 2 in raw value on the acpi_video0 controller:
+
+      light -Scrs "acpi_video0" 2

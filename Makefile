@@ -1,10 +1,11 @@
 CC=gcc
-CFLAGS=-std=c89 -pedantic -Wall
+CFLAGS=-std=c89 -pedantic -Wall -I"./include"
 
-debug:clean
-	$(CC) $(CFLAGS) -g -o light main.c
-stable:clean
-	$(CC) $(CFLAGS) -o light main.c
+all:
+	$(CC) $(CFLAGS) -g -o light src/helpers.c src/light.c src/main.c
+exp:
+	$(CC) $(CFLAGS) -E  src/helpers.c src/light.c
+
 clean:
 	rm -vfr *~ light
 	

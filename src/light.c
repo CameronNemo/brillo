@@ -306,11 +306,22 @@ LIGHT_BOOL light_execute()
 
   rawSetP     = LIGHT_CLAMP( ((unsigned long) (light_Configuration.specifiedValuePercent * ((double)rawMax) ) / 100) , minCap, rawMax );
   rawAddP     = LIGHT_CLAMP( ((unsigned long) ( (percentCurr + light_Configuration.specifiedValuePercent) * ((double)rawMax)) / 100) , minCap, rawMax );
-  rawSubP     = LIGHT_CLAMP( ((unsigned long) ( (percentCurr - light_Configuration.specifiedValuePercent) * ((double)rawMax)) / 100) , minCap, rawMax );
+
+  if( light_Configuration.specifiedValuePercent > percentCurr)
+  {
+    rawSubP   = LIGHT_CLAMP(0, minCap, rawMax);
+  }else{
+    rawSubP     = LIGHT_CLAMP( ((unsigned long) ( (percentCurr - light_Configuration.specifiedValuePercent) * ((double)rawMax)) / 100) , minCap, rawMax );
+  }
 
   rawSetR     = LIGHT_CLAMP( light_Configuration.specifiedValueRaw , minCap, rawMax );
   rawAddR     = LIGHT_CLAMP( rawCurr + light_Configuration.specifiedValueRaw , minCap, rawMax );
-  rawSubR     = LIGHT_CLAMP( rawCurr - light_Configuration.specifiedValueRaw , minCap, rawMax );
+  
+  if(light_Configuration.specifiedValueRaw > rawCurr){
+    rawSubR     = LIGHT_CLAMP(0, minCap, rawMax)
+  }else{
+    rawSubR     = LIGHT_CLAMP( rawCurr - light_Configuration.specifiedValueRaw , minCap, rawMax );
+  }
 
   minCapP     = LIGHT_CLAMP(((unsigned long) (light_Configuration.specifiedValuePercent * ((double)rawMax) ) / 100), 0, rawMax);
   minCapR     = LIGHT_CLAMP( light_Configuration.specifiedValueRaw, 0, rawMax );

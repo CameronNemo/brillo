@@ -31,7 +31,7 @@ LIGHT_BOOL light_parseArguments(int argc, char** argv)
 
   unsigned long specLen = 0;
 
-  while((currFlag = getopt(argc, argv, "HhVGSAUbmcas:prv:")) != -1)
+  while((currFlag = getopt(argc, argv, "HhVGSAULbmcas:prv:")) != -1)
   {
     switch(currFlag)
     {
@@ -61,6 +61,9 @@ LIGHT_BOOL light_parseArguments(int argc, char** argv)
         ASSERT_OPSET();
         light_Configuration.operationMode = LIGHT_SUB;
         break;
+      case 'L':
+        ASSERT_OPSET();
+        light_Configuration.operationMode = LIGHT_LIST_CTRL;
 
       /* -- Targets -- */
       case 'b':
@@ -185,7 +188,8 @@ void light_printHelp(){
   printf("  -G:\t\tGet value (default)\n");
   printf("  -S:\t\tSet value\n");
   printf("  -A:\t\tAdd value\n");
-  printf("  -U:\t\tSubtract value\n\n");
+  printf("  -U:\t\tSubtract value\n");
+  printf("  -L:\t\tList controllers\n\n");
   
   printf("Targets (can not be used in conjunction):\n");
   printf("  -b:\t\tBrightness (default)\n  \t\tUsed with [GSAU]\n\n");
@@ -216,7 +220,8 @@ LIGHT_BOOL light_initialize(int argc, char** argv)
     return FALSE;
   }
 
-  if(light_Configuration.operationMode == LIGHT_PRINT_HELP || light_Configuration.operationMode == LIGHT_PRINT_VERSION)
+  /* Just return true for operation modes that do not need initialization */
+  if(light_Configuration.operationMode == LIGHT_PRINT_HELP || light_Configuration.operationMode == LIGHT_PRINT_VERSION || light_Configuration.operationMode == LIGHT_LIST_CTRL)
   {
       return TRUE;
   }
@@ -289,6 +294,13 @@ LIGHT_BOOL light_execute()
   if(light_Configuration.operationMode == LIGHT_PRINT_VERSION)
   {
     light_printVersion();
+    return TRUE;
+  }
+
+  if(light_Configuration.operationMode == LIGHT_LIST_CTRL)
+  {
+    /* listControllers() can return FALSE, but only if it does not find any controllers. That is not enough for an unsuccessfull run. */
+    light_listControllers();
     return TRUE;
   }
 
@@ -412,6 +424,7 @@ LIGHT_BOOL light_execute()
         case LIGHT_GET:
         case LIGHT_PRINT_HELP:
         case LIGHT_PRINT_VERSION:
+        case LIGHT_LIST_CTRL:
           break;
       }
 
@@ -729,5 +742,28 @@ LIGHT_BOOL light_setMinCap(char const * controller, unsigned long v)
   }
 
   free(mincapPath);
+  return TRUE;
+}
+
+LIGHT_BOOL light_listControllers()
+{
+  LIGHT_BOOL foundController = FALSE;
+
+  while(light_iterateControllers())
+  {
+    if(!foundController)
+    {
+      foundController = TRUE;
+    }
+
+    printf("%s\n", light_currentController);
+  }
+
+  if(!foundController)
+  {
+    LIGHT_WARN("no controllers found, either check your system or your permissions");
+    return FALSE;
+  }
+
   return TRUE;
 }

@@ -62,7 +62,8 @@ typedef enum LIGHT_OP_MODE {
   LIGHT_ADD,
   LIGHT_SUB,
   LIGHT_PRINT_HELP,   /* Prints help and exits  */
-  LIGHT_PRINT_VERSION /* Prints version info and exits */
+  LIGHT_PRINT_VERSION, /* Prints version info and exits */
+  LIGHT_LIST_CTRL
 } LIGHT_OP_MODE;
 
 typedef enum LIGHT_VAL_MODE {
@@ -138,5 +139,7 @@ LIGHT_BOOL light_getBestController(char *controller);
 LIGHT_BOOL light_getMinCap(char const *controller, LIGHT_BOOL *hasMinCap, unsigned long *minCap);
 
 LIGHT_BOOL light_setMinCap(char const *controller, unsigned long v);
+
+LIGHT_BOOL light_listControllers();
 
 #endif /* LIGHT_H */

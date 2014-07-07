@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-std=c89 -pedantic -Wall -I"./include"
+CFLAGS=-std=c89 -O2 -pedantic -Wall -I"./include"
 
 all:
 	$(CC) $(CFLAGS) -g -o light src/helpers.c src/light.c src/main.c

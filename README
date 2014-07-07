@@ -34,10 +34,7 @@ Installation:
 
   2) Type `make`
 
-  3) Run makeexec.sh as root to give regular users the ability to run the
-     program with root permissions.
-
-  4) Copy/create a symbolic link to the executable to /usr/bin
+  3) As root/with sudo; type `make install`
 
   5) Enjoy!
 

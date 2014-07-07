@@ -64,6 +64,7 @@ LIGHT_BOOL light_parseArguments(int argc, char** argv)
       case 'L':
         ASSERT_OPSET();
         light_Configuration.operationMode = LIGHT_LIST_CTRL;
+        break;
 
       /* -- Targets -- */
       case 'b':

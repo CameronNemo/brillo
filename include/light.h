@@ -48,7 +48,8 @@
 typedef enum LIGHT_TARGET {
   LIGHT_BRIGHTNESS = 0,
   LIGHT_MAX_BRIGHTNESS,
-  LIGHT_MIN_CAP
+  LIGHT_MIN_CAP,
+  LIGHT_SAVERESTORE
 } LIGHT_TARGET;
 
 typedef enum LIGHT_CTRL_MODE {
@@ -63,7 +64,10 @@ typedef enum LIGHT_OP_MODE {
   LIGHT_SUB,
   LIGHT_PRINT_HELP,   /* Prints help and exits  */
   LIGHT_PRINT_VERSION, /* Prints version info and exits */
-  LIGHT_LIST_CTRL
+  LIGHT_LIST_CTRL,
+  LIGHT_RESTORE,
+  LIGHT_SAVE
+
 } LIGHT_OP_MODE;
 
 typedef enum LIGHT_VAL_MODE {
@@ -141,5 +145,9 @@ LIGHT_BOOL light_getMinCap(char const *controller, LIGHT_BOOL *hasMinCap, unsign
 LIGHT_BOOL light_setMinCap(char const *controller, unsigned long v);
 
 LIGHT_BOOL light_listControllers();
+
+LIGHT_BOOL light_saveBrightness(char const *controller, unsigned long v);
+
+LIGHT_BOOL light_restoreBrightness(char const *controller);
 
 #endif /* LIGHT_H */

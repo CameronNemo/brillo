@@ -31,7 +31,7 @@ LIGHT_BOOL light_parseArguments(int argc, char** argv)
 
   unsigned long specLen = 0;
 
-  while((currFlag = getopt(argc, argv, "HhVGSAULbmcas:prv:")) != -1)
+  while((currFlag = getopt(argc, argv, "HhVGSAULIObmcas:prv:")) != -1)
   {
     switch(currFlag)
     {
@@ -64,6 +64,14 @@ LIGHT_BOOL light_parseArguments(int argc, char** argv)
       case 'L':
         ASSERT_OPSET();
         light_Configuration.operationMode = LIGHT_LIST_CTRL;
+        break;
+      case 'I':
+        ASSERT_OPSET();
+        light_Configuration.operationMode = LIGHT_RESTORE;
+        break;
+      case 'O':
+        ASSERT_OPSET();
+        light_Configuration.operationMode = LIGHT_SAVE;
         break;
 
       /* -- Targets -- */
@@ -190,7 +198,9 @@ void light_printHelp(){
   printf("  -S:\t\tSet value\n");
   printf("  -A:\t\tAdd value\n");
   printf("  -U:\t\tSubtract value\n");
-  printf("  -L:\t\tList controllers\n\n");
+  printf("  -L:\t\tList controllers\n");
+  printf("  -I:\t\tRestore brightness\n");
+  printf("  -O:\t\tSave brightness\n\n");
   
   printf("Targets (can not be used in conjunction):\n");
   printf("  -b:\t\tBrightness (default)\n  \t\tUsed with [GSAU]\n\n");
@@ -227,7 +237,7 @@ LIGHT_BOOL light_initialize(int argc, char** argv)
       return TRUE;
   }
 
-  /* Make sure we have a valid /etc/light directory, as well as /etc/light/mincap */
+  /* Make sure we have a valid /etc/light directory, as well as mincap and save */
   mkdirVal = mkdir("/etc/light", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
   if(mkdirVal != 0 && errno != EEXIST)
   {
@@ -239,6 +249,13 @@ LIGHT_BOOL light_initialize(int argc, char** argv)
   if(mkdirVal != 0 && errno != EEXIST)
   {
     LIGHT_ERR("/etc/light/mincap does not exist and could not be created");
+    return FALSE;
+  }
+
+  mkdirVal = mkdir("/etc/light/save", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  if(mkdirVal != 0 && errno != EEXIST)
+  {
+    LIGHT_ERR("/etc/light/save does not exist and could not be created");
     return FALSE;
   }
 
@@ -371,6 +388,8 @@ LIGHT_BOOL light_execute()
       case LIGHT_MIN_CAP:
         (light_Configuration.valueMode == LIGHT_RAW) ? printf("%lu\n", minCap) : printf("%.2f\n", percentMinCap);
         break;
+      case LIGHT_SAVERESTORE:
+        break;
     }
 
     return TRUE;
@@ -426,6 +445,8 @@ LIGHT_BOOL light_execute()
         case LIGHT_PRINT_HELP:
         case LIGHT_PRINT_VERSION:
         case LIGHT_LIST_CTRL:
+        case LIGHT_SAVE:
+        case LIGHT_RESTORE:
           break;
       }
 
@@ -444,6 +465,26 @@ LIGHT_BOOL light_execute()
       printf("set/add/subtract operations are only available for brightness and minimum cap files.\n");
       return FALSE;
     }
+  }
+
+  /* Handle saves and restores*/
+  if(light_Configuration.operationMode == LIGHT_SAVE){
+    if(!light_saveBrightness(light_Configuration.specifiedController, rawCurr))
+    {
+      LIGHT_ERR("could not save brightness");
+      return FALSE;
+    }
+
+    return TRUE;
+  }
+
+  if(light_Configuration.operationMode == LIGHT_RESTORE){
+    if(!light_restoreBrightness(light_Configuration.specifiedController)){
+      LIGHT_ERR("could not restore brightness");
+      return FALSE;
+    }
+
+    return TRUE;
   }
 
   printf("Controller: %s\nValueRaw: %lu\nValuePercent: %.2f\nOpMode: %u\nValMode: %u\nTarget: %u\n\n", light_Configuration.specifiedController, light_Configuration.specifiedValueRaw, light_Configuration.specifiedValuePercent, light_Configuration.operationMode, light_Configuration.valueMode, light_Configuration.target);
@@ -482,6 +523,9 @@ LIGHT_BOOL light_genPath(char const *controller, LIGHT_TARGET type, char **buffe
       break;
     case LIGHT_MIN_CAP:
       spfVal = sprintf(returner, "/etc/light/mincap/%s", controller);
+      break;
+    case LIGHT_SAVERESTORE:
+      spfVal = sprintf(returner, "/etc/light/save/%s", controller);
       break;
   }
 
@@ -766,5 +810,52 @@ LIGHT_BOOL light_listControllers()
     return FALSE;
   }
 
+  return TRUE;
+}
+
+LIGHT_BOOL light_saveBrightness(char const *controller, unsigned long v){
+  char *savePath = NULL;
+  if(!light_genPath(controller, LIGHT_SAVERESTORE, &savePath))
+  {
+    LIGHT_ERR("could not generate path to save/restore file");
+    return FALSE;
+  }
+
+  if(!light_writeULong(savePath, v))
+  {
+    LIGHT_ERR("could not write to save/restore file");
+    free(savePath);
+    return FALSE;
+  }
+
+  free(savePath);
+  return TRUE;
+}
+
+LIGHT_BOOL light_restoreBrightness(char const *controller){
+  char *restorePath = NULL;
+  unsigned long v = 0;
+
+  if(!light_genPath(controller, LIGHT_SAVERESTORE, &restorePath))
+  {
+    LIGHT_ERR("could not generate path to save/restore file");
+    return FALSE;
+  }
+
+  if(!light_readULong(restorePath, &v))
+  {
+    LIGHT_ERR("could not read saved value");
+    free(restorePath);
+    return FALSE;
+  }
+
+  if(!light_setBrightness(controller, v))
+  {
+    LIGHT_ERR("could not set restored brightness");
+    free(restorePath);
+    return FALSE;
+  }
+
+  free(restorePath);
   return TRUE;
 }

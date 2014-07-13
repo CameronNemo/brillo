@@ -31,7 +31,14 @@ I recommend you go with light-git as you might miss important features and bugfi
 
 ### Debian/Ubuntu (Or other Debian-based)
 
-A .deb is on the way
+There are 2 different versions of .deb packages available:
+* [light_20140713-1_i386.deb](http://haikarainen.1.ai/light/light_20140713-1_i386.deb) - Dated releases, for the absolutely latest version
+* [light_0.9-1_i386.deb](http://haikarainen.1.ai/light/light_0.9-1_i386.deb) - Tagged releases, for the latest versioned release
+
+I recommend you go with the dated releases, as you might miss important features and bugfixes if you do not.
+
+For an archive, see: [http://haikarainen.1.ai/light/](http://haikarainen.1.ai/light)
+
 
 ### Manual
 

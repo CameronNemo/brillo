@@ -501,7 +501,7 @@ void light_free()
 
 LIGHT_BOOL light_genPath(char const *controller, LIGHT_TARGET type, char **buffer)
 {
-  char* returner = (char*)malloc(256);
+  char* returner = malloc(256);
   int spfVal = -1;
 
   if(returner == NULL)

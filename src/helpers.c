@@ -135,7 +135,7 @@ LIGHT_BOOL light_readString(char const * filename, char *buffer, long* size)
   rewind(fileHandle);
 
   /* Allocate the string and null-terminate it */
-  buffer = (char*) malloc(sizeof(char)*(fileSize+1));
+  buffer = malloc(sizeof(char)*(fileSize+1));
   memset(buffer, '\0', fileSize);
 
   if(buffer == NULL)

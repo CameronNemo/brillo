@@ -436,6 +436,10 @@ LIGHT_BOOL light_execute()
           writeVal = (light_Configuration.valueMode == LIGHT_RAW) ? &rawSetR : &rawSetP;
           break;
         case LIGHT_ADD:
+          if(rawCurr == rawAddP && rawAddP != rawMax)
+          {
+            rawAddP+=1;
+          }
           writeVal = (light_Configuration.valueMode == LIGHT_RAW) ? &rawAddR : &rawAddP;
           break;
         case LIGHT_SUB:

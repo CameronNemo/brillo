@@ -6,7 +6,12 @@ CC=gcc
 CFLAGS=-std=c89 -O2 -pedantic -Wall -I"./include"
 MANFLAGS=-h -h -v -V
 
+HELP2MAN_VERSION := $(shell help2man --version 2>/dev/null)
+
 all:
+ifndef HELP2MAN_VERSION
+$(error "help2man is not installed")
+endif
 	$(CC) $(CFLAGS) -g -o light src/helpers.c src/light.c src/main.c
 exp:
 	$(CC) $(CFLAGS) -E  src/helpers.c src/light.c

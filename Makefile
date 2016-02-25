@@ -1,6 +1,6 @@
 PREFIX=$(DESTDIR)/usr
 BINDIR=$(PREFIX)/bin
-MANDIR=/usr/share/man/man1
+MANDIR=$(PREFIX)/share/man/man1
 
 CC=gcc
 CFLAGS=-std=c89 -O2 -pedantic -Wall -I"./include"

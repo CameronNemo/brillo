@@ -7,15 +7,13 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE
 
 ## Description
 
-"Light"  is  a program  to control backlight controllers  under GNU/Linux,
-it is the successor of lightscript, which was a bash script with the  same
-purpose, and tries to maintain the same functionality.
+Light is a program to control backlight controllers under GNU/Linux, it is the successor of lightscript, which was a bash script with the same purpose, and tries to maintain the same functionality.
 
 
 ## Features
 
-* Works excellent where other software has been proven to be unusable or problematic, thanks to how it operates internally and to the fact that it does not rely on xorg.
-* Can automatically figure out the best controller to use, making full use of underlying hardware drivers.
+* Works excellent where other software have been proven unusable or problematic, thanks to how it operates internally and the fact that it does not rely on X.
+* Can automatically figure out the best controller to use, making full use of underlying hardware.
 * Possibility to set a minimum brightness value, as some controllers set the screen to be pitch black at a vaĺue of 0 (or higher).
 
 

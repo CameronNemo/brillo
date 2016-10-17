@@ -8,17 +8,16 @@ MANFLAGS=-h -h -v -V
 
 HELP2MAN_VERSION := $(shell help2man --version 2>/dev/null)
 
-all:
+light: src/helpers.c src/light.c src/main.c
+	$(CC) $(CFLAGS) -g -o $@ $^
+
+man: light
 ifndef HELP2MAN_VERSION
 $(error "help2man is not installed")
 endif
-	$(CC) $(CFLAGS) -g -o light src/helpers.c src/light.c src/main.c
-exp:
-	$(CC) $(CFLAGS) -E  src/helpers.c src/light.c
-man:
 	help2man $(MANFLAGS) ./light | gzip - > light.1.gz
 
-install: all man
+install: light man
 	mkdir -p $(BINDIR)
 	cp -f ./light $(BINDIR)/light
 	chown root $(BINDIR)/light
@@ -33,4 +32,5 @@ uninstall:
 
 clean:
 	rm -vfr *~ light light.1.gz
-	
+
+.PHONY: man install uninstall clean

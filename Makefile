@@ -4,7 +4,7 @@ MANDIR=$(PREFIX)/share/man/man1
 
 CC=gcc
 CFLAGS=-std=c89 -O2 -pedantic -Wall -I"./include"
-MANFLAGS=-h -h -v -V
+MANFLAGS=-h -h -v -V -N
 
 HELP2MAN_VERSION := $(shell help2man --version 2>/dev/null)
 

@@ -49,7 +49,9 @@ typedef enum LIGHT_TARGET {
   LIGHT_BRIGHTNESS = 0,
   LIGHT_MAX_BRIGHTNESS,
   LIGHT_MIN_CAP,
-  LIGHT_SAVERESTORE
+  LIGHT_SAVERESTORE,
+  LIGHT_KEYBOARD,
+  LIGHT_KEYBOARD_MAX_BRIGHTNESS
 } LIGHT_TARGET;
 
 typedef enum LIGHT_CTRL_MODE {
@@ -85,7 +87,7 @@ typedef struct light_runtimeArguments_s {
   LIGHT_VAL_MODE  valueMode;
   unsigned long   specifiedValueRaw; /* The specified value in raw mode */
   double          specifiedValuePercent; /* The specified value in percent */
-  
+
   LIGHT_TARGET    target;
 } light_runtimeArguments, *light_runtimeArguments_p;
 

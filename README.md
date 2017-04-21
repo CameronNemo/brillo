@@ -79,6 +79,7 @@ As you can not only handle the **brightness** of controllers, you may also speci
 * -b: Current brightness of selected controller
 * -m: Maximum brightness of selected controller
 * -c: Minimum brightness (cap) of selected controller
+* -k: Set keyboard brightness instead of display brightness
 
 The minimum brightness is a feature implemented as some controllers make the screen go pitch black at 0%, if you have a controller like that, it is recommended to set this value (in either percent or in raw mode). These values will be saved in raw mode though, so if you specify it in percent it might not be too accurate depending on your controller.
 

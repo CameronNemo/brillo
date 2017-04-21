@@ -31,7 +31,7 @@ LIGHT_BOOL light_parseArguments(int argc, char** argv)
 
   unsigned long specLen = 0;
 
-  while((currFlag = getopt(argc, argv, "HhVGSAULIObmcas:prv:")) != -1)
+  while((currFlag = getopt(argc, argv, "HhVGSAULIObmckas:prv:")) != -1)
   {
     switch(currFlag)
     {
@@ -87,6 +87,9 @@ LIGHT_BOOL light_parseArguments(int argc, char** argv)
         ASSERT_TARGETSET();
         light_Configuration.target = LIGHT_MIN_CAP;
         break;
+      case 'k':
+	      ASSERT_TARGETSET();
+	      light_Configuration.target = LIGHT_KEYBOARD;
 
       /* -- Controller selection -- */
       case 'a':
@@ -201,11 +204,12 @@ void light_printHelp(){
   printf("  -L:\t\tList controllers\n");
   printf("  -I:\t\tRestore brightness\n");
   printf("  -O:\t\tSave brightness\n\n");
-  
+
   printf("Targets (can not be used in conjunction):\n");
   printf("  -b:\t\tBrightness (default)\n  \t\tUsed with [GSAU]\n\n");
   printf("  -m:\t\tMaximum brightness\n  \t\tUsed with [G]\n\n");
   printf("  -c:\t\tMinimum cap\n  \t\tUsed with [GS]\n");
+  printf("  -k:\t\tSet keyboard brightness instead of display brightness \n \t\tUsed with [GSAU]");
   printf("  \t\tG returns null if no minimum cap is set.\n\n");
 
   printf("Controller selection (can not be used in conjunction):\n");
@@ -215,7 +219,7 @@ void light_printHelp(){
   printf("Value modes (can not be used in conjunction):\n");
   printf("  -p:\t\tInterpret <value> as, and output values in, percent. (default)\n");
   printf("  -r:\t\tInterpret <value> as, and output values in, raw mode.\n\n");
-  
+
   printf("Other:\n");
   printf("  -v:\t\tSets the verbosity level, (needs argument).\n  \t\t0: Only outputs read values.\n  \t\t1: Read values, Errors.\n  \t\t2: Read values, Errors, Warnings.\n  \t\t3: Read values, Errors, Warnings, Notices.\n\n");
 }
@@ -275,7 +279,7 @@ LIGHT_BOOL light_initialize(int argc, char** argv)
     LIGHT_ERR("selected controller is not valid, make sure this application is run as root.");
     return FALSE;
   }
-  
+
 
   return TRUE;
 }
@@ -285,7 +289,7 @@ LIGHT_BOOL light_execute()
   unsigned long rawCurr; /* The current brightness, in raw mode */
   double    percentCurr; /* The current brightness, in percent  */
   unsigned long  rawMax; /* The max brightness, in percent      */
-  
+
   unsigned long  rawSetP; /* The final value to be set, in raw mode, when setting with percent */
   unsigned long  rawAddP; /* The final value to be set, in raw mode, when adding with percent */
   unsigned long  rawSubP; /* The final value to be set, in raw mode, when subtracting with percent */
@@ -351,7 +355,7 @@ LIGHT_BOOL light_execute()
 
   /* -- Secondly, calculate the rest of the values (Clamp them here as well!) */
   percentCurr = LIGHT_CLAMP( ((double)rawCurr) /  ((double)rawMax) * 100 , 0.00, 100.00 );
-  percentMinCap = LIGHT_CLAMP( ((double)minCap) / ((double)rawMax) * 100 , 0.00, 100.00 );  
+  percentMinCap = LIGHT_CLAMP( ((double)minCap) / ((double)rawMax) * 100 , 0.00, 100.00 );
 
   rawSetP     = LIGHT_CLAMP( ((unsigned long) (light_Configuration.specifiedValuePercent * ((double)rawMax) ) / 100) , minCap, rawMax );
   rawAddP     = LIGHT_CLAMP( ((unsigned long) ( (percentCurr + light_Configuration.specifiedValuePercent) * ((double)rawMax)) / 100) , minCap, rawMax );
@@ -365,7 +369,7 @@ LIGHT_BOOL light_execute()
 
   rawSetR     = LIGHT_CLAMP( light_Configuration.specifiedValueRaw , minCap, rawMax );
   rawAddR     = LIGHT_CLAMP( rawCurr + light_Configuration.specifiedValueRaw , minCap, rawMax );
-  
+
   if(light_Configuration.specifiedValueRaw > rawCurr){
     rawSubR     = LIGHT_CLAMP(0, minCap, rawMax)
   }else{
@@ -374,7 +378,7 @@ LIGHT_BOOL light_execute()
 
   minCapP     = LIGHT_CLAMP(((unsigned long) (light_Configuration.specifiedValuePercent * ((double)rawMax) ) / 100), 0, rawMax);
   minCapR     = LIGHT_CLAMP( light_Configuration.specifiedValueRaw, 0, rawMax );
-  
+
   /* Handle get operations */
   if(light_Configuration.operationMode == LIGHT_GET)
   {
@@ -390,6 +394,12 @@ LIGHT_BOOL light_execute()
         break;
       case LIGHT_SAVERESTORE:
         break;
+      case LIGHT_KEYBOARD:
+        (light_Configuration.valueMode == LIGHT_RAW) ? printf("%lu\n", rawCurr) : printf("%.2f\n", percentCurr);
+        break;
+      case LIGHT_KEYBOARD_MAX_BRIGHTNESS:
+        (light_Configuration.valueMode == LIGHT_RAW) ? printf("%lu\n", rawMax) : printf("100.00\n"); /* <- I know how stupid it is but it might just make someones life easier */
+        break;
     }
 
     return TRUE;
@@ -397,7 +407,7 @@ LIGHT_BOOL light_execute()
 
   /* Handle set/add/sub operations */
   if(light_Configuration.operationMode == LIGHT_SET ||
-     light_Configuration.operationMode == LIGHT_ADD || 
+     light_Configuration.operationMode == LIGHT_ADD ||
      light_Configuration.operationMode == LIGHT_SUB)
   {
 
@@ -426,7 +436,7 @@ LIGHT_BOOL light_execute()
       /* All good? Return true. */
       return TRUE;
 
-    }else if(light_Configuration.target == LIGHT_BRIGHTNESS){
+    }else if(light_Configuration.target == LIGHT_BRIGHTNESS || light_Configuration.target == LIGHT_KEYBOARD){
       /* Handle brightness writing */
 
       /* Point our writevalue according to configuration */
@@ -516,7 +526,7 @@ LIGHT_BOOL light_genPath(char const *controller, LIGHT_TARGET type, char **buffe
   }
 
   memset(returner, '\0', 256);
-  
+
   switch(type)
   {
     case LIGHT_BRIGHTNESS:
@@ -530,6 +540,12 @@ LIGHT_BOOL light_genPath(char const *controller, LIGHT_TARGET type, char **buffe
       break;
     case LIGHT_SAVERESTORE:
       spfVal = sprintf(returner, "/etc/light/save/%s", controller);
+      break;
+    case LIGHT_KEYBOARD:
+      spfVal = sprintf(returner, "/sys/class/leds/%s/brightness", controller);
+      break;
+    case LIGHT_KEYBOARD_MAX_BRIGHTNESS:
+      spfVal = sprintf(returner, "/sys/class/leds/%s/max_brightness", controller);
       break;
   }
 
@@ -551,12 +567,12 @@ LIGHT_BOOL light_getBrightness(char const *controller, unsigned long *v)
   char *brightnessPath = NULL;
   LIGHT_BOOL readVal = FALSE;
 
-  if(!light_genPath(controller, LIGHT_BRIGHTNESS, &brightnessPath))
+  if(!light_genPath(controller, light_Configuration.target, &brightnessPath))
   {
     LIGHT_ERR("could not generate path to brightness file");
     return FALSE;
   }
-
+  LIGHT_NOTE(brightnessPath)
   readVal = light_readULong( brightnessPath , v);
   free(brightnessPath);
 
@@ -574,7 +590,17 @@ LIGHT_BOOL light_getMaxBrightness(char const *controller, unsigned long *v)
   char *maxPath;
   LIGHT_BOOL readVal = FALSE;
 
-  if(!light_genPath(controller, LIGHT_MAX_BRIGHTNESS, &maxPath))
+  LIGHT_TARGET target;
+  if(light_Configuration.target == LIGHT_KEYBOARD)
+  {
+    target = LIGHT_KEYBOARD_MAX_BRIGHTNESS;
+  }
+  else
+  {
+    target = LIGHT_MAX_BRIGHTNESS;
+  }
+
+  if(!light_genPath(controller, target, &maxPath))
   {
     LIGHT_ERR("could not generate path to maximum brightness file");
     return FALSE;
@@ -603,7 +629,7 @@ LIGHT_BOOL light_setBrightness(char const *controller, unsigned long v)
   char *brightnessPath = NULL;
   LIGHT_BOOL writeVal = FALSE;
 
-  if(!light_genPath(controller, LIGHT_BRIGHTNESS, &brightnessPath))
+  if(!light_genPath(controller, light_Configuration.target, &brightnessPath))
   {
     LIGHT_ERR("could not generate path to brightness file");
     return FALSE;
@@ -627,6 +653,7 @@ LIGHT_BOOL light_controllerAccessible(char const *controller)
 
   if(!light_getBrightness(controller, &dummy))
   {
+    LIGHT_NOTE(controller)
     LIGHT_WARN("could not read controllers brightness file, so controller is not accessible")
     return FALSE;
   }
@@ -637,7 +664,7 @@ LIGHT_BOOL light_controllerAccessible(char const *controller)
     return FALSE;
   }
 
-  if(!light_genPath(controller, LIGHT_BRIGHTNESS, &brightnessPath))
+  if(!light_genPath(controller, light_Configuration.target, &brightnessPath))
   {
     LIGHT_ERR("could not generate path to brightness file");
     return FALSE;
@@ -661,9 +688,13 @@ LIGHT_BOOL light_iterateControllers()
   if(light_iteratorDir == NULL)
   {
     light_iteratorDir = opendir("/sys/class/backlight");
+    if(light_Configuration.target == LIGHT_KEYBOARD)
+    {
+      light_iteratorDir = opendir("/sys/class/leds");
+    }
     if(light_iteratorDir == NULL)
     {
-      LIGHT_ERR("could not open /sys/class/backlight directory");
+      LIGHT_ERR("could not open backlight or leds directory");
       return FALSE;
     }
   }
@@ -706,7 +737,7 @@ LIGHT_BOOL light_getBestController(char *controller)
 
     if(light_getMaxBrightness(light_currentController, &currVal))
     {
-      
+
       if(light_controllerAccessible(light_currentController))
       {
         if(currVal > bestValYet)
@@ -747,7 +778,7 @@ LIGHT_BOOL light_getBestController(char *controller)
 LIGHT_BOOL light_getMinCap(char const * controller, LIGHT_BOOL * hasMinCap, unsigned long * minCap)
 {
  char * mincapPath = NULL;
- 
+
  if(!light_genPath(controller, LIGHT_MIN_CAP, &mincapPath))
  {
     LIGHT_ERR("could not generate path to minimum cap file");

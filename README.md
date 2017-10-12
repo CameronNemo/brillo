@@ -85,7 +85,9 @@ The minimum brightness is a feature implemented as some controllers make the scr
 
 ### Controller modes
 
-Finally, you can either use the built-in controller selection to get the controller with the maximum precision, or you can specify one manually with the -s flag. The -a flag will force automatic mode and is default. Use -L to get a list of controllers to use with the -s flag (to specify which controller to use).
+Finally, you can either use the built-in controller selection to get the controller with the maximum precision, or you can specify one manually with the -s flag. The -a flag will force automatic mode and is default. Use -L to get a list of controllers to use with the -s flag (to specify which controller to use). 
+
+**Notice: You _need_ to include the `-s` or `-a` flag on _every_ command you run. The controller setting will _not_ be stored anywhere! If you do not use any of the flags, it will always default to automatic selection.**
 
 ### Examples
 

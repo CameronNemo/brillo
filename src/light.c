@@ -736,10 +736,10 @@ LIGHT_BOOL light_getBestController(char *controller)
   {
     unsigned long currVal = 0;
 
-    if(light_getMaxBrightness(light_currentController, &currVal))
+    if(light_controllerAccessible(light_currentController))
     {
 
-      if(light_controllerAccessible(light_currentController))
+      if(light_getMaxBrightness(light_currentController, &currVal))
       {
         if(currVal > bestValYet)
         {
@@ -751,10 +751,10 @@ LIGHT_BOOL light_getBestController(char *controller)
           LIGHT_NOTE("ignoring controller as better one already found");
         }
       }else{
-        LIGHT_WARN("controller not accessible");
+        LIGHT_WARN("could not read max brightness from file");
       }
     }else{
-      LIGHT_WARN("could not read max brightness from file");
+      LIGHT_WARN("controller not accessible");
     }
   }
 

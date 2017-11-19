@@ -695,10 +695,13 @@ LIGHT_BOOL light_iterateControllers()
 
   if(light_iteratorDir == NULL)
   {
-    light_iteratorDir = opendir("/sys/class/backlight");
     if(light_Configuration.target == LIGHT_KEYBOARD)
     {
       light_iteratorDir = opendir("/sys/class/leds");
+    }
+    else
+    {
+      light_iteratorDir = opendir("/sys/class/backlight");
     }
     if(light_iteratorDir == NULL)
     {

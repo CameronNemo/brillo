@@ -273,8 +273,7 @@ LIGHT_BOOL light_initialize(int argc, char** argv)
       return FALSE;
     }
   }
-
-  if(!light_controllerAccessible(light_Configuration.specifiedController))
+  else if(!light_controllerAccessible(light_Configuration.specifiedController))
   {
     LIGHT_ERR("selected controller is not valid, make sure this application is run as root.");
     return FALSE;

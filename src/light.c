@@ -569,14 +569,34 @@ LIGHT_BOOL light_genPath(char const *controller, LIGHT_TARGET type, char **buffe
   return TRUE;
 }
 
+LIGHT_BOOL light_getBrightnessPath(char const *controller, char **path)
+{
+  LIGHT_TARGET target;
+
+  if(light_Configuration.target == LIGHT_MIN_CAP)
+  {
+    target = LIGHT_BRIGHTNESS;
+  }
+  else
+  {
+    target = light_Configuration.target;
+  }
+
+  if(!light_genPath(controller, target, path))
+  {
+    LIGHT_ERR("could not generate path to brightness file");
+    return FALSE;
+  }
+  return TRUE;
+}
+
 LIGHT_BOOL light_getBrightness(char const *controller, unsigned long *v)
 {
   char *brightnessPath = NULL;
   LIGHT_BOOL readVal = FALSE;
 
-  if(!light_genPath(controller, light_Configuration.target, &brightnessPath))
+  if(!light_getBrightnessPath(controller, &brightnessPath))
   {
-    LIGHT_ERR("could not generate path to brightness file");
     return FALSE;
   }
   LIGHT_NOTE(brightnessPath)
@@ -592,12 +612,10 @@ LIGHT_BOOL light_getBrightness(char const *controller, unsigned long *v)
   return TRUE;
 }
 
-LIGHT_BOOL light_getMaxBrightness(char const *controller, unsigned long *v)
+LIGHT_BOOL light_getMaxBrightnessPath(char const *controller, char **path)
 {
-  char *maxPath;
-  LIGHT_BOOL readVal = FALSE;
-
   LIGHT_TARGET target;
+
   if(light_Configuration.target == LIGHT_KEYBOARD)
   {
     target = LIGHT_KEYBOARD_MAX_BRIGHTNESS;
@@ -607,12 +625,23 @@ LIGHT_BOOL light_getMaxBrightness(char const *controller, unsigned long *v)
     target = LIGHT_MAX_BRIGHTNESS;
   }
 
-  if(!light_genPath(controller, target, &maxPath))
+  if(!light_genPath(controller, target, path))
   {
     LIGHT_ERR("could not generate path to maximum brightness file");
     return FALSE;
   }
+  return TRUE;
+}
 
+LIGHT_BOOL light_getMaxBrightness(char const *controller, unsigned long *v)
+{
+  char *maxPath = NULL;
+  LIGHT_BOOL readVal = FALSE;
+
+  if (!light_getMaxBrightnessPath(controller, &maxPath))
+  {
+    return FALSE;
+  }
   readVal = light_readULong(maxPath , v);
   free(maxPath);
 
@@ -656,31 +685,41 @@ LIGHT_BOOL light_setBrightness(char const *controller, unsigned long v)
 LIGHT_BOOL light_controllerAccessible(char const *controller)
 {
   char *brightnessPath = NULL;
-  unsigned long dummy;
 
-  if(!light_getBrightness(controller, &dummy))
+  /* On auto mode, we need to check if we can read the max brightness value
+     of the controller for later computation */
+  if(light_Configuration.controllerMode == LIGHT_AUTO ||
+     light_Configuration.target == LIGHT_MAX_BRIGHTNESS)
   {
-    LIGHT_NOTE(controller)
-    LIGHT_WARN("could not read controllers brightness file, so controller is not accessible")
-    return FALSE;
+    if(!light_getMaxBrightnessPath(controller, &brightnessPath))
+    {
+      return FALSE;
+    }
+    if(!light_isReadable(brightnessPath))
+    {
+      LIGHT_WARN("could not open controller max brightness file for reading, so controller is not accessible");
+      free(brightnessPath);
+      return FALSE;
+    }
+    free(brightnessPath);
   }
 
-  if(!light_getMaxBrightness(controller, &dummy))
+  if(!light_getBrightnessPath(controller, &brightnessPath))
   {
-    LIGHT_WARN("could not read controller max brightness file, so controller is not accessible")
-    return FALSE;
-  }
-
-  if(!light_genPath(controller, light_Configuration.target, &brightnessPath))
-  {
-    LIGHT_ERR("could not generate path to brightness file");
     return FALSE;
   }
 
   if(light_Configuration.operationMode != LIGHT_GET &&
+     light_Configuration.target != LIGHT_MIN_CAP &&
      !light_isWritable(brightnessPath))
   {
     LIGHT_WARN("could not open controller brightness file for writing, so controller is not accessible");
+    free(brightnessPath);
+    return FALSE;
+  }
+  else if (!light_isReadable(brightnessPath))
+  {
+    LIGHT_WARN("could not open controller brightness file for reading, so controller is not accessible");
     free(brightnessPath);
     return FALSE;
   }

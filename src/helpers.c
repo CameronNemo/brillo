@@ -182,7 +182,7 @@ LIGHT_BOOL light_isDir(char const * path)
 
 LIGHT_BOOL light_isWritable(char const * filename)
 {
-  FILE* fileHandle = fopen(filename, "w");
+  FILE* fileHandle = fopen(filename, "r+");
 
   if(!fileHandle)
   {

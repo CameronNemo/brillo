@@ -354,7 +354,7 @@ LIGHT_BOOL light_execute()
     return FALSE;
   }
 
-  if( hasMinCap && ( minCap < 0 || minCap > rawMax ) )
+  if( hasMinCap && minCap > rawMax )
   {
     LIGHT_WARN("invalid minimum cap for controller, ignoring and using 0");
     minCap = 0;

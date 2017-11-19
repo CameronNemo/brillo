@@ -23,6 +23,7 @@ void light_defaultConfig()
 LIGHT_BOOL light_parseArguments(int argc, char** argv)
 {
   int currFlag;
+  int verbosity;
 
   LIGHT_BOOL opSet = FALSE;
   LIGHT_BOOL targetSet = FALSE;
@@ -133,18 +134,19 @@ LIGHT_BOOL light_parseArguments(int argc, char** argv)
           light_printHelp();
           return FALSE;
         }
-        if(sscanf(optarg, "%i", &light_verbosity) != 1)
+        if(sscanf(optarg, "%i", &verbosity) != 1)
         {
           printf("-v Verbosity is not specified in a recognizable format.\n\n");
           light_printHelp();
           return FALSE;
         }
-        if(light_verbosity < 0 || light_verbosity > 3)
+        if(verbosity < 0 || verbosity > 3)
         {
           printf("-v Verbosity has to be between 0 and 3.\n\n");
           light_printHelp();
           return FALSE;
         }
+        light_verbosity = (LIGHT_LOG_LEVEL)verbosity;
         break;
     }
   }
@@ -283,10 +285,10 @@ LIGHT_BOOL light_initialize(int argc, char** argv)
   }
   else if(!light_controllerAccessible(light_Configuration.specifiedController))
   {
-    LIGHT_ERR("selected controller is not valid, make sure this application is run as root.");
+    LIGHT_ERR_FMT("selected controller '%s' is not valid",
+                  light_Configuration.specifiedController);
     return FALSE;
   }
-
 
   return TRUE;
 }
@@ -334,6 +336,7 @@ LIGHT_BOOL light_execute()
   }
 
   /* Prepare variables */
+  LIGHT_NOTE_FMT("Executing light on '%s' controller", light_Configuration.specifiedController);
 
   /* -- First, get the current, min and max values directly from controller/configuration (raw values) */
   if(!light_getBrightness(light_Configuration.specifiedController, &rawCurr))
@@ -356,7 +359,8 @@ LIGHT_BOOL light_execute()
 
   if( hasMinCap && minCap > rawMax )
   {
-    LIGHT_WARN("invalid minimum cap for controller, ignoring and using 0");
+    LIGHT_WARN_FMT("invalid minimum cap (raw) value of '%lu' for controller, ignoring and using 0", minCap);
+    LIGHT_WARN_FMT("minimum cap must be inferior to '%lu'", rawMax);
     minCap = 0;
   }
 
@@ -428,7 +432,7 @@ LIGHT_BOOL light_execute()
       /* If we are not attempting to set, fail! */
       if(light_Configuration.operationMode != LIGHT_SET)
       {
-        printf("Minimum cap can only be used with get/set operations.\n");
+        fprintf(stderr, "Minimum cap can only be used with get/set operations.\n");
         return FALSE;
       }
 
@@ -483,7 +487,7 @@ LIGHT_BOOL light_execute()
 
     }else{
       /* If we didn't provide a valid target for write operations, fail. */
-      printf("set/add/subtract operations are only available for brightness and minimum cap files.\n");
+      fprintf(stderr, "set/add/subtract operations are only available for brightness and minimum cap files.\n");
       return FALSE;
     }
   }
@@ -508,9 +512,9 @@ LIGHT_BOOL light_execute()
     return TRUE;
   }
 
-  printf("Controller: %s\nValueRaw: %lu\nValuePercent: %.2f\nOpMode: %u\nValMode: %u\nTarget: %u\n\n", light_Configuration.specifiedController, light_Configuration.specifiedValueRaw, light_Configuration.specifiedValuePercent, light_Configuration.operationMode, light_Configuration.valueMode, light_Configuration.target);
+  fprintf(stderr, "Controller: %s\nValueRaw: %lu\nValuePercent: %.2f\nOpMode: %u\nValMode: %u\nTarget: %u\n\n", light_Configuration.specifiedController, light_Configuration.specifiedValueRaw, light_Configuration.specifiedValuePercent, light_Configuration.operationMode, light_Configuration.valueMode, light_Configuration.target);
 
-  printf("You did not specify a valid combination of commandline arguments. Have some help: \n");
+  fprintf(stderr, "You did not specify a valid combination of commandline arguments. Have some help: \n");
   light_printHelp();
   return FALSE;
 }
@@ -599,7 +603,7 @@ LIGHT_BOOL light_getBrightness(char const *controller, unsigned long *v)
   {
     return FALSE;
   }
-  LIGHT_NOTE(brightnessPath)
+
   readVal = light_readULong( brightnessPath , v);
   free(brightnessPath);
 
@@ -744,7 +748,7 @@ LIGHT_BOOL light_iterateControllers()
     }
     if(light_iteratorDir == NULL)
     {
-      LIGHT_ERR("could not open backlight or leds directory");
+      LIGHT_ERR("could not open backlight or leds directory in /sys/class");
       return FALSE;
     }
   }
@@ -785,6 +789,7 @@ LIGHT_BOOL light_getBestController(char *controller)
   {
     unsigned long currVal = 0;
 
+    LIGHT_NOTE_FMT("found '%s' controller", light_currentController);
     if(light_controllerAccessible(light_currentController))
     {
 

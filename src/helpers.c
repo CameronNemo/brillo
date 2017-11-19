@@ -15,13 +15,13 @@ LIGHT_BOOL light_readUInt(char const * filename, unsigned int *i)
 
   if(!fileHandle)
   {
-    LIGHT_ERR("could not open file for reading");
+    LIGHT_PERMERR("reading");
     return FALSE;
   }
 
   if(fscanf(fileHandle, "%u", &iCopy) != 1)
   {
-    LIGHT_ERR("file contents are corrupt");
+    LIGHT_ERR_FMT("Couldn't parse a positive integer number from '%s'", filename);
     fclose(fileHandle);
     return FALSE;
   }
@@ -40,7 +40,7 @@ LIGHT_BOOL light_writeUInt(char const * filename, unsigned int i)
 
   if(!fileHandle)
   {
-    LIGHT_ERR("could not open file for writing");
+    LIGHT_PERMERR("writing");
     return FALSE;
   }
 
@@ -65,13 +65,13 @@ LIGHT_BOOL light_readULong(char const * filename, unsigned long *i)
 
   if(!fileHandle)
   {
-    LIGHT_ERR("could not open file for reading");
+    LIGHT_PERMERR("reading");
     return FALSE;
   }
 
   if(fscanf(fileHandle, "%lu", &iCopy) != 1)
   {
-    LIGHT_ERR("file contents are corrupt");
+    LIGHT_ERR_FMT("Couldn't parse a positive integer number from '%s'", filename);
     fclose(fileHandle);
     return FALSE;
   }
@@ -90,7 +90,7 @@ LIGHT_BOOL light_writeULong(char const * filename, unsigned long i)
 
   if(!fileHandle)
   {
-    LIGHT_ERR("could not open file for writing");
+    LIGHT_PERMERR("writing");
     return FALSE;
   }
 
@@ -125,7 +125,7 @@ LIGHT_BOOL light_readString(char const * filename, char *buffer, long* size)
 
   if(!fileHandle)
   {
-    LIGHT_ERR("could not open file for reading");
+    LIGHT_PERMERR("reading");
     return FALSE;
   }
 
@@ -186,6 +186,7 @@ LIGHT_BOOL light_isWritable(char const * filename)
 
   if(!fileHandle)
   {
+    LIGHT_PERMWARN("writing");
     return FALSE;
   }
 
@@ -199,6 +200,7 @@ LIGHT_BOOL light_isReadable(char const * filename)
 
   if(!fileHandle)
   {
+    LIGHT_PERMWARN("reading");
     return FALSE;
   }
 

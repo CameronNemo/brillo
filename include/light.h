@@ -89,6 +89,11 @@ typedef struct light_runtimeArguments_s {
   double          specifiedValuePercent; /* The specified value in percent */
 
   LIGHT_TARGET    target;
+
+  /* Cache data */
+  LIGHT_BOOL      hasCachedMaxBrightness;
+  unsigned long   cachedMaxBrightness;
+
 } light_runtimeArguments, *light_runtimeArguments_p;
 
 /* -- Global variables that handles iterating controllers -- */

@@ -17,6 +17,8 @@ void light_defaultConfig()
   light_Configuration.specifiedValueRaw      = 0;
   light_Configuration.specifiedValuePercent  = 0.0;
   light_Configuration.target                 = LIGHT_BRIGHTNESS;
+  light_Configuration.hasCachedMaxBrightness = FALSE;
+  light_Configuration.cachedMaxBrightness    = 0;
   light_verbosity                            = 0;
 }
 
@@ -339,7 +341,11 @@ LIGHT_BOOL light_execute()
     return FALSE;
   }
 
-  if(!light_getMaxBrightness(light_Configuration.specifiedController, &rawMax))
+  if(light_Configuration.hasCachedMaxBrightness)
+  {
+    rawMax = light_Configuration.cachedMaxBrightness;
+  }
+  else if(!light_getMaxBrightness(light_Configuration.specifiedController, &rawMax))
   {
     LIGHT_ERR("could not get max brightness");
     return FALSE;
@@ -795,6 +801,8 @@ LIGHT_BOOL light_getBestController(char *controller)
         bestValYet = currVal;
         memset(bestYet, '\0', 256);
         strcpy(bestYet, light_currentController);
+        light_Configuration.hasCachedMaxBrightness = TRUE;
+        light_Configuration.cachedMaxBrightness = currVal;
         }else{
           LIGHT_NOTE("ignoring controller as better one already found");
         }

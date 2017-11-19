@@ -670,7 +670,8 @@ LIGHT_BOOL light_controllerAccessible(char const *controller)
     return FALSE;
   }
 
-  if(!light_isWritable(brightnessPath))
+  if(light_Configuration.operationMode != LIGHT_GET &&
+     !light_isWritable(brightnessPath))
   {
     LIGHT_WARN("could not open controller brightness file for writing, so controller is not accessible");
     free(brightnessPath);

@@ -245,26 +245,30 @@ LIGHT_BOOL light_initialize(int argc, char** argv)
       return TRUE;
   }
 
-  /* Make sure we have a valid /etc/light directory, as well as mincap and save */
-  mkdirVal = mkdir("/etc/light", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  if(mkdirVal != 0 && errno != EEXIST)
+  if(mode == LIGHT_SAVE ||
+     (mode == LIGHT_SET && light_Configuration.target == LIGHT_MIN_CAP))
   {
-    LIGHT_ERR("/etc/light does not exist and could not be created");
-    return FALSE;
-  }
+    /* Make sure we have a valid /etc/light directory, as well as mincap and save */
+    mkdirVal = mkdir("/etc/light", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    if(mkdirVal != 0 && errno != EEXIST)
+    {
+      LIGHT_ERR("/etc/light does not exist and could not be created, make sure this application is run as root.");
+      return FALSE;
+    }
 
-  mkdirVal = mkdir("/etc/light/mincap", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  if(mkdirVal != 0 && errno != EEXIST)
-  {
-    LIGHT_ERR("/etc/light/mincap does not exist and could not be created");
-    return FALSE;
-  }
+    mkdirVal = mkdir("/etc/light/mincap", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    if(mkdirVal != 0 && errno != EEXIST)
+    {
+      LIGHT_ERR("/etc/light/mincap does not exist and could not be created, make sure this application is run as root.");
+      return FALSE;
+    }
 
-  mkdirVal = mkdir("/etc/light/save", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  if(mkdirVal != 0 && errno != EEXIST)
-  {
-    LIGHT_ERR("/etc/light/save does not exist and could not be created");
-    return FALSE;
+    mkdirVal = mkdir("/etc/light/save", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    if(mkdirVal != 0 && errno != EEXIST)
+    {
+      LIGHT_ERR("/etc/light/save does not exist and could not be created, make sure this application is run as root.");
+      return FALSE;
+    }
   }
 
   /* Make sure we have a valid controller before we proceed */

@@ -227,6 +227,7 @@ void light_printHelp(){
 LIGHT_BOOL light_initialize(int argc, char** argv)
 {
   int mkdirVal;
+  LIGHT_OP_MODE mode;
 
   light_defaultConfig();
   if(!light_parseArguments(argc, argv))
@@ -234,9 +235,12 @@ LIGHT_BOOL light_initialize(int argc, char** argv)
     LIGHT_ERR("could not parse arguments");
     return FALSE;
   }
+  mode = light_Configuration.operationMode;
 
   /* Just return true for operation modes that do not need initialization */
-  if(light_Configuration.operationMode == LIGHT_PRINT_HELP || light_Configuration.operationMode == LIGHT_PRINT_VERSION || light_Configuration.operationMode == LIGHT_LIST_CTRL)
+  if(mode == LIGHT_PRINT_HELP ||
+     mode == LIGHT_PRINT_VERSION ||
+     mode == LIGHT_LIST_CTRL)
   {
       return TRUE;
   }

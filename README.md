@@ -40,7 +40,7 @@ ACTION=="add", SUBSYSTEM=="backlight", RUN+="/bin/chmod g+w /sys/class/backlight
 
 ## Usage
 
-This application usually has 4 different criteria on flags to use, which are operation modes, value mode, target and controller mode. Flags from these different modes can never be used in conjunction, but all of them do not always have to be specified (although it is recommended to do so for verbosity).
+This application usually has 5 different criteria on flags to use, which are operation modes, value mode, target, field and controller mode. Flags from these different modes can never be used in conjunction, but all of them do not always have to be specified (although it is recommended to do so for verbosity).
 
 **Note:** This application will only print errors if you are using it incorrectly. If something goes wrong, and you can't figure out why, try setting the verbosity flag with -v:
 
@@ -74,12 +74,18 @@ Remember, this is the unit that will be used when you set, get, add or subtract 
 
 ### Target
 
-As you can not only handle the **brightness** of controllers, you may also specify a target to read/write from/to:
+You can choose which target to act on:
+
+* -l: Act on screen backlight
+* -k: Act on keyboard backlight and LEDs
+
+### Field
+
+As you can not only handle the **brightness** of controllers, you may also specify a field to read/write from/to:
 
 * -b: Current brightness of selected controller
 * -m: Maximum brightness of selected controller
 * -c: Minimum brightness (cap) of selected controller
-* -k: Set keyboard brightness instead of display brightness
 
 The minimum brightness is a feature implemented as some controllers make the screen go pitch black at 0%, if you have a controller like that, it is recommended to set this value (in either percent or in raw mode). These values will be saved in raw mode though, so if you specify it in percent it might not be too accurate depending on your controller.
 
@@ -93,7 +99,7 @@ Finally, you can either use the built-in controller selection to get the control
 
 Get the current brightness in percent
 
-`light -G`
+`light -G`, or simply `light`
 
 Increase brightness by 5 percent
 
@@ -103,3 +109,20 @@ Set the minimum cap to 2 in raw value on the acpi_video0 controller:
 
 `light -Scrs "acpi_video0" 2`
 
+Try to set the brightness to 0 after that, it will be changed to the minimum 2
+
+`light -Srs "acpi_video0" 0`
+
+Find keyboard controllers
+
+`light -Lk`
+
+Activate `ScrollLock` LED
+
+`light -Sks "input15::scrolllock" 100`
+
+Usually, LEDs only take 0 or 1 in raw value (i.e. for off/on), so you can write
+
+`light -Skrs "input15::scrolllock" 1`
+
+Verify this with `light -v3 -mkrs input15::scrolllock`, you should get a max. brightness of 1

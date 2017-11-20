@@ -341,6 +341,9 @@ LIGHT_BOOL light_initExecution(unsigned long *rawCurr, unsigned long *rawMax, LI
   if(light_Configuration.field == LIGHT_MIN_CAP ||
      light_Configuration.field == LIGHT_MAX_BRIGHTNESS)
   {
+    /* Init other values to 0 */
+    *rawCurr = *minCap = 0;
+    *hasMinCap = FALSE;
     return TRUE;
   }
 

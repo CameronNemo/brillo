@@ -13,7 +13,7 @@
  *    x;
  *  }
  * }*/
-#define LIGHT_CLAMP(x, y, z) ((x<y) ? y : ((x>z) ? z : x ));
+#define LIGHT_CLAMP(x, y, z) ((x<y) ? (light_logInfClamp(y)) : ((x>z) ? (light_logSupClamp(z)) : x ))
 
 #define LIGHT_LOG_FMT_BUF_SIZE 1024
 /* Verbosity levels: 
@@ -83,5 +83,9 @@ LIGHT_BOOL light_isWritable(char const * filename);
 
 /* Returns TRUE if file is readable, FALSE otherwise */
 LIGHT_BOOL light_isReadable(char const * filename);
+
+double light_logInfClamp(double x);
+
+double light_logSupClamp(double x);
 
 #endif /* LIGHT_HELPERS_H */

@@ -207,3 +207,15 @@ LIGHT_BOOL light_isReadable(char const * filename)
   fclose(fileHandle);
   return TRUE;
 }
+
+double light_logInfClamp(double x)
+{
+  LIGHT_NOTE_FMT("specified value is inferior to %g, so adjusting it to this mininum value", x);
+  return x;
+}
+
+double light_logSupClamp(double x)
+{
+  LIGHT_NOTE_FMT("specified value is superior to %g, so adjusting it to this maximum value", x);
+  return x;
+}

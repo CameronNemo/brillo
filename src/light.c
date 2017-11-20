@@ -678,6 +678,7 @@ LIGHT_BOOL light_setBrightness(char const *controller, unsigned long v)
     return FALSE;
   }
 
+  LIGHT_NOTE_FMT("setting brightness %lu (raw) to controller", v);
   writeVal = light_writeULong(brightnessPath, v);
 
   if(!writeVal)
@@ -849,6 +850,7 @@ LIGHT_BOOL light_getMinCap(char const * controller, LIGHT_BOOL * hasMinCap, unsi
     *hasMinCap = FALSE;
     *minCap = 0;
     free(mincapPath);
+    LIGHT_NOTE("cap file doesn't exist or can't read from it, so assuming a minimum brightness of 0");
     return TRUE;
   }
 
@@ -874,6 +876,7 @@ LIGHT_BOOL light_setMinCap(char const * controller, unsigned long v)
     return FALSE;
   }
 
+  LIGHT_NOTE_FMT("setting minimum cap to %lu (raw)", v);
   if(!light_writeULong(mincapPath, v))
   {
     LIGHT_ERR("could not write to minimum cap file");
@@ -916,6 +919,7 @@ LIGHT_BOOL light_saveBrightness(char const *controller, unsigned long v){
     return FALSE;
   }
 
+  LIGHT_NOTE_FMT("saving brightness %lu (raw) to save file\n", v);
   if(!light_writeULong(savePath, v))
   {
     LIGHT_ERR("could not write to save/restore file");
@@ -937,6 +941,7 @@ LIGHT_BOOL light_restoreBrightness(char const *controller){
     return FALSE;
   }
 
+  LIGHT_NOTE("restoring brightness from saved file");
   if(!light_readULong(restorePath, &v))
   {
     LIGHT_ERR("could not read saved value");

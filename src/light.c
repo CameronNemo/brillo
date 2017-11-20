@@ -289,29 +289,9 @@ LIGHT_BOOL light_initialize(int argc, char** argv)
   return TRUE;
 }
 
-LIGHT_BOOL light_execute()
+/* Print help and version info */
+LIGHT_BOOL light_handleInfo()
 {
-  unsigned long rawCurr; /* The current brightness, in raw mode */
-  double    percentCurr; /* The current brightness, in percent  */
-  unsigned long  rawMax; /* The max brightness, in percent      */
-
-  unsigned long  rawSetP; /* The final value to be set, in raw mode, when setting with percent */
-  unsigned long  rawAddP; /* The final value to be set, in raw mode, when adding with percent */
-  unsigned long  rawSubP; /* The final value to be set, in raw mode, when subtracting with percent */
-
-  unsigned long  rawSetR; /* The final value to be set, in raw mode, when setting with raw values */
-  unsigned long  rawAddR; /* The final value to be set, in raw mode, when adding with raw values */
-  unsigned long  rawSubR; /* The final value to be set, in raw mode, when subtracting with raw values */
-
-  unsigned long   minCap; /* The minimum cap, in raw mode */
-  double   percentMinCap; /* The minimum cap, in percent */
-  LIGHT_BOOL   hasMinCap; /* If we have a minimum cap     */
-  unsigned long  minCapP; /* The final value to be set, in raw mode, when setting with percent (This is uncapped and used for minimum cap setting) */
-  unsigned long  minCapR; /* The final value to be set, in raw mode, when setting with raw values (This is uncapped and used for minimum cap setting) */
-
-  unsigned long  *writeVal; /* The actual value used for writing */
-
-  /* Print help and version info */
   if(light_Configuration.operationMode == LIGHT_PRINT_HELP)
   {
     light_printHelp();
@@ -330,87 +310,113 @@ LIGHT_BOOL light_execute()
     light_listControllers();
     return TRUE;
   }
+  return FALSE;
+}
 
-  /* Prepare variables */
-  LIGHT_NOTE_FMT("Executing light on '%s' controller", light_Configuration.specifiedController);
-
-  /* -- First, get the current, min and max values directly from controller/configuration (raw values) */
-  if(!light_getBrightness(light_Configuration.specifiedController, &rawCurr))
-  {
-    LIGHT_ERR("could not get brightness");
-    return FALSE;
-  }
-
+LIGHT_BOOL light_initExecution(unsigned long *rawCurr, unsigned long *rawMax, LIGHT_BOOL *hasMinCap, unsigned long *minCap)
+{
   if(light_Configuration.hasCachedMaxBrightness)
   {
-    rawMax = light_Configuration.cachedMaxBrightness;
+    *rawMax = light_Configuration.cachedMaxBrightness;
   }
-  else if(!light_getMaxBrightness(light_Configuration.specifiedController, &rawMax))
+  else if(!light_getMaxBrightness(light_Configuration.specifiedController, rawMax))
   {
     LIGHT_ERR("could not get max brightness");
     return FALSE;
   }
 
-  if(!light_getMinCap(light_Configuration.specifiedController, &hasMinCap, &minCap))
+  /* No need to go further if targetting mincap */
+  if(light_Configuration.target == LIGHT_MIN_CAP)
+  {
+    return TRUE;
+  }
+
+  if(!light_getBrightness(light_Configuration.specifiedController, rawCurr))
+  {
+    LIGHT_ERR("could not get brightness");
+    return FALSE;
+  }
+
+  if(!light_getMinCap(light_Configuration.specifiedController, hasMinCap, minCap))
   {
     LIGHT_ERR("could not get min brightness");
     return FALSE;
   }
 
-  if( hasMinCap && minCap > rawMax )
+  if( *hasMinCap && *minCap > *rawMax )
   {
-    LIGHT_WARN_FMT("invalid minimum cap (raw) value of '%lu' for controller, ignoring and using 0", minCap);
-    LIGHT_WARN_FMT("minimum cap must be inferior to '%lu'", rawMax);
+    LIGHT_WARN_FMT("invalid minimum cap (raw) value of '%lu' for controller, ignoring and using 0", *minCap);
+    LIGHT_WARN_FMT("minimum cap must be inferior to '%lu'", *rawMax);
     minCap = 0;
+  }
+  return TRUE;
+}
+
+LIGHT_BOOL light_execute()
+{
+  unsigned long rawCurr; /* The current brightness, in raw units */
+  double    percentCurr; /* The current brightness, in percent  */
+  unsigned long  rawMax; /* The max brightness, in percent      */
+
+  unsigned long   minCap; /* The minimum cap, in raw units */
+  double   percentMinCap; /* The minimum cap, in percent */
+  LIGHT_BOOL   hasMinCap; /* If we have a minimum cap     */
+  unsigned long writeVal;
+
+  LIGHT_VAL_MODE valueMode;
+
+  if(light_handleInfo())
+  {
+    return TRUE;
+  }
+
+  /* -- First, get the current, min and max values directly from controller/configuration (raw values) */
+  if(!light_initExecution(&rawCurr, &rawMax, &hasMinCap, &minCap))
+  {
+    return FALSE;
   }
 
   /* -- Secondly, calculate the rest of the values (Clamp them here as well!) */
+  valueMode = light_Configuration.valueMode;
   percentCurr = LIGHT_CLAMP( ((double)rawCurr) /  ((double)rawMax) * 100 , 0.00, 100.00 );
   percentMinCap = LIGHT_CLAMP( ((double)minCap) / ((double)rawMax) * 100 , 0.00, 100.00 );
 
-  rawSetP     = LIGHT_CLAMP( ((unsigned long) (light_Configuration.specifiedValuePercent * ((double)rawMax) ) / 100) , minCap, rawMax );
-  rawAddP     = LIGHT_CLAMP( ((unsigned long) ( (percentCurr + light_Configuration.specifiedValuePercent) * ((double)rawMax)) / 100) , minCap, rawMax );
-
-  if( light_Configuration.specifiedValuePercent > percentCurr)
-  {
-    rawSubP   = LIGHT_CLAMP(0, minCap, rawMax);
-  }else{
-    rawSubP     = LIGHT_CLAMP( ((unsigned long) ( (percentCurr - light_Configuration.specifiedValuePercent) * ((double)rawMax)) / 100) , minCap, rawMax );
-  }
-
-  rawSetR     = LIGHT_CLAMP( light_Configuration.specifiedValueRaw , minCap, rawMax );
-  rawAddR     = LIGHT_CLAMP( rawCurr + light_Configuration.specifiedValueRaw , minCap, rawMax );
-
-  if(light_Configuration.specifiedValueRaw > rawCurr){
-    rawSubR     = LIGHT_CLAMP(0, minCap, rawMax)
-  }else{
-    rawSubR     = LIGHT_CLAMP( rawCurr - light_Configuration.specifiedValueRaw , minCap, rawMax );
-  }
-
-  minCapP     = LIGHT_CLAMP(((unsigned long) (light_Configuration.specifiedValuePercent * ((double)rawMax) ) / 100), 0, rawMax);
-  minCapR     = LIGHT_CLAMP( light_Configuration.specifiedValueRaw, 0, rawMax );
+  LIGHT_NOTE_FMT("executing light on '%s' controller", light_Configuration.specifiedController);
 
   /* Handle get operations */
   if(light_Configuration.operationMode == LIGHT_GET)
   {
     switch(light_Configuration.target){
       case LIGHT_BRIGHTNESS:
-        (light_Configuration.valueMode == LIGHT_RAW) ? printf("%lu\n", rawCurr) : printf("%.2f\n", percentCurr);
+        (valueMode == LIGHT_RAW) ? printf("%lu\n", rawCurr) : printf("%.2f\n", percentCurr);
         break;
       case LIGHT_MAX_BRIGHTNESS:
-        (light_Configuration.valueMode == LIGHT_RAW) ? printf("%lu\n", rawMax) : printf("100.00\n"); /* <- I know how stupid it is but it might just make someones life easier */
+        (valueMode == LIGHT_RAW) ? printf("%lu\n", rawMax) : printf("100.00\n"); /* <- I know how stupid it is but it might just make someones life easier */
         break;
       case LIGHT_MIN_CAP:
-        (light_Configuration.valueMode == LIGHT_RAW) ? printf("%lu\n", minCap) : printf("%.2f\n", percentMinCap);
+        (valueMode == LIGHT_RAW) ? printf("%lu\n", minCap) : printf("%.2f\n", percentMinCap);
         break;
       case LIGHT_SAVERESTORE:
         break;
-      case LIGHT_KEYBOARD:
-        (light_Configuration.valueMode == LIGHT_RAW) ? printf("%lu\n", rawCurr) : printf("%.2f\n", percentCurr);
-        break;
-      case LIGHT_KEYBOARD_MAX_BRIGHTNESS:
-        (light_Configuration.valueMode == LIGHT_RAW) ? printf("%lu\n", rawMax) : printf("100.00\n"); /* <- I know how stupid it is but it might just make someones life easier */
-        break;
+    }
+    return TRUE;
+  }
+
+  /* Handle saves and restores*/
+  if(light_Configuration.operationMode == LIGHT_SAVE){
+    if(!light_saveBrightness(light_Configuration.specifiedController, rawCurr))
+    {
+      LIGHT_ERR("could not save brightness");
+      return FALSE;
+    }
+
+    return TRUE;
+  }
+
+  if(light_Configuration.operationMode == LIGHT_RESTORE){
+    if(!light_restoreBrightness(light_Configuration.specifiedController)){
+      LIGHT_ERR("could not restore brightness");
+      return FALSE;
     }
 
     return TRUE;
@@ -421,14 +427,12 @@ LIGHT_BOOL light_execute()
      light_Configuration.operationMode == LIGHT_ADD ||
      light_Configuration.operationMode == LIGHT_SUB)
   {
-
-    /* Set the pointer we will use for write to a fallback (that shouldn't change anything) */
-    writeVal = &rawCurr;
-
     if(light_Configuration.target == LIGHT_MIN_CAP)
     {
       /* Handle minimum cap files */
-
+      writeVal = valueMode == LIGHT_RAW ?
+        LIGHT_CLAMP( light_Configuration.specifiedValueRaw, 0, rawMax ) :
+        LIGHT_CLAMP(((unsigned long) (light_Configuration.specifiedValuePercent * ((double)rawMax) ) / 100), 0, rawMax);
       /* If we are not attempting to set, fail! */
       if(light_Configuration.operationMode != LIGHT_SET)
       {
@@ -436,9 +440,7 @@ LIGHT_BOOL light_execute()
         return FALSE;
       }
 
-      /* Point our writevalue and attempt to write*/
-      writeVal = (light_Configuration.valueMode == LIGHT_RAW) ? &minCapR : &minCapP;
-      if(!light_setMinCap(light_Configuration.specifiedController, *writeVal))
+      if(!light_setMinCap(light_Configuration.specifiedController, writeVal))
       {
         LIGHT_ERR("could not set minimum cap");
         return FALSE;
@@ -450,33 +452,34 @@ LIGHT_BOOL light_execute()
     }else if(light_Configuration.target == LIGHT_BRIGHTNESS || light_Configuration.target == LIGHT_KEYBOARD){
       /* Handle brightness writing */
 
-      /* Point our writevalue according to configuration */
       switch(light_Configuration.operationMode)
       {
         case LIGHT_SET:
-          writeVal = (light_Configuration.valueMode == LIGHT_RAW) ? &rawSetR : &rawSetP;
+          writeVal = valueMode == LIGHT_RAW ?
+            LIGHT_CLAMP( light_Configuration.specifiedValueRaw , minCap, rawMax ) :
+            LIGHT_CLAMP( ((unsigned long) (light_Configuration.specifiedValuePercent * ((double)rawMax) ) / 100) , minCap, rawMax );
           break;
         case LIGHT_ADD:
-          if(rawCurr == rawAddP && rawAddP != rawMax)
-          {
-            rawAddP+=1;
-          }
-          writeVal = (light_Configuration.valueMode == LIGHT_RAW) ? &rawAddR : &rawAddP;
+          writeVal = valueMode == LIGHT_RAW ?
+            LIGHT_CLAMP( rawCurr + light_Configuration.specifiedValueRaw , minCap, rawMax ) :
+            LIGHT_CLAMP( ((unsigned long) ( (percentCurr + light_Configuration.specifiedValuePercent) * ((double)rawMax)) / 100) , minCap, rawMax );
           break;
         case LIGHT_SUB:
-          writeVal = (light_Configuration.valueMode == LIGHT_RAW) ? &rawSubR : &rawSubP;
-          break;
-        case LIGHT_GET:
-        case LIGHT_PRINT_HELP:
-        case LIGHT_PRINT_VERSION:
-        case LIGHT_LIST_CTRL:
-        case LIGHT_SAVE:
-        case LIGHT_RESTORE:
-          break;
+         if(light_Configuration.specifiedValueRaw > rawCurr){
+           writeVal = LIGHT_CLAMP(0, minCap, rawMax);
+         }else{
+          writeVal = valueMode == LIGHT_RAW ?
+            LIGHT_CLAMP( rawCurr - light_Configuration.specifiedValueRaw , minCap, rawMax ):
+            LIGHT_CLAMP( ((unsigned long) ( (percentCurr - light_Configuration.specifiedValuePercent) * ((double)rawMax)) / 100) , minCap, rawMax );
+         }
+         break;
+        /* we have already taken other possibilities, so we shouldn't get here */
+        default:
+          return FALSE;
       }
 
       /* Attempt to write */
-      if(!light_setBrightness(light_Configuration.specifiedController, *writeVal))
+      if(!light_setBrightness(light_Configuration.specifiedController, writeVal))
       {
         LIGHT_ERR("could not set brightness");
         return FALSE;

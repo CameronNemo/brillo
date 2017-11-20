@@ -12,46 +12,30 @@
 #define LIGHT_YEAR 2014
 #define LIGHT_AUTHOR "Fredrik Haikarainen"
 
-#define ASSERT_OPSET() \
-  if(opSet)\
+#define ASSERT_SET(t,v) \
+  if(v)\
   {\
-    printf("Operation arguments can not be used in conjunction.\n");\
+    printf(t" arguments can not be used in conjunction.\n");\
     return FALSE;\
   }\
-  opSet = TRUE;
+  v = TRUE;
 
-#define ASSERT_TARGETSET() \
-  if(targetSet)\
-  {\
-    printf("Target arguments can not be used in conjunction.\n");\
-    return FALSE;\
-  }\
-  targetSet = TRUE;
+#define ASSERT_OPSET() ASSERT_SET("Operation", opSet)
+#define ASSERT_TARGETSET() ASSERT_SET("Target", targetSet)
+#define ASSERT_FIELDSET() ASSERT_SET("Field", fieldSet)
+#define ASSERT_CTRLSET() ASSERT_SET("Controller", ctrlSet)
+#define ASSERT_VALSET() ASSERT_SET("Value", valSet)
 
-#define ASSERT_CTRLSET()\
-  if(ctrlSet)\
-  {\
-    printf("Controller arguments can not be used in conjunction.\n");\
-    return FALSE;\
-  }\
-  ctrlSet = TRUE;
-
-#define ASSERT_VALSET()\
-  if(valSet)\
-  {\
-    printf("Value arguments can not be used in conjunction.\n");\
-    return FALSE;\
-  }\
-  valSet = TRUE;
-
-
-typedef enum LIGHT_TARGET {
+typedef enum LIGHT_FIELD {
   LIGHT_BRIGHTNESS = 0,
   LIGHT_MAX_BRIGHTNESS,
   LIGHT_MIN_CAP,
-  LIGHT_SAVERESTORE,
-  LIGHT_KEYBOARD,
-  LIGHT_KEYBOARD_MAX_BRIGHTNESS
+  LIGHT_SAVERESTORE
+} LIGHT_FIELD;
+
+typedef enum LIGHT_TARGET {
+  LIGHT_BACKLIGHT = 0,
+  LIGHT_KEYBOARD
 } LIGHT_TARGET;
 
 typedef enum LIGHT_CTRL_MODE {
@@ -88,7 +72,8 @@ typedef struct light_runtimeArguments_s {
   unsigned long   specifiedValueRaw; /* The specified value in raw mode */
   double          specifiedValuePercent; /* The specified value in percent */
 
-  LIGHT_TARGET    target;
+  LIGHT_TARGET   target;
+  LIGHT_FIELD    field;
 
   /* Cache data */
   LIGHT_BOOL      hasCachedMaxBrightness;
@@ -132,7 +117,7 @@ void light_free();
 
 /* WARNING: `buffer` HAS to be freed by the user if not null once returned!
  * Size is always 256 */
-LIGHT_BOOL light_genPath(char const *controller, LIGHT_TARGET type, char **buffer);
+LIGHT_BOOL light_genPath(char const *controller, LIGHT_TARGET target, LIGHT_FIELD type, char **buffer);
 
 LIGHT_BOOL light_getBrightness(char const *controller, unsigned long *v);
 

@@ -23,6 +23,46 @@ void light_defaultConfig()
   light_verbosity                            = 0;
 }
 
+LIGHT_BOOL light_checkOperations()
+{
+  LIGHT_BOOL valid = TRUE;
+  LIGHT_OP_MODE op = light_Configuration.operationMode;
+
+  /* Nothing to check if we just print info */
+  if(op == LIGHT_PRINT_HELP || op == LIGHT_PRINT_VERSION || op == LIGHT_LIST_CTRL)
+  {
+    return TRUE;
+  }
+
+  switch (light_Configuration.field) {
+  case LIGHT_BRIGHTNESS:
+    if(op != LIGHT_GET && op != LIGHT_SET &&
+       op != LIGHT_ADD && op != LIGHT_SUB)
+    {
+      valid = FALSE;
+      fprintf(stderr, "Wrong operation specified for brightness. You can use only -G -S -A or -U\n\n");
+    }
+    break;
+  case LIGHT_MAX_BRIGHTNESS:
+    if(op != LIGHT_GET)
+    {
+      valid = FALSE;
+      fprintf(stderr, "Wrong operation specified for max brightness. You can only use -G\n\n");
+    }
+    break;
+  case LIGHT_MIN_CAP:
+    if(op != LIGHT_GET && op != LIGHT_SET)
+    {
+      valid = FALSE;
+      fprintf(stderr, "Wrong operation specified for min cap. You can only use -G or -S\n\n");
+    }
+  default:
+    break;
+  }
+  return valid;
+}
+
+
 LIGHT_BOOL light_parseArguments(int argc, char** argv)
 {
   int currFlag;
@@ -160,6 +200,12 @@ LIGHT_BOOL light_parseArguments(int argc, char** argv)
         light_verbosity = (LIGHT_LOG_LEVEL)verbosity;
         break;
     }
+  }
+
+  if(!light_checkOperations())
+  {
+    light_printHelp();
+    return FALSE;
   }
 
   /* If we need a <value> (for writing), make sure we have it! */
@@ -449,12 +495,6 @@ LIGHT_BOOL light_execute()
       writeVal = valueMode == LIGHT_RAW ?
         LIGHT_CLAMP( light_Configuration.specifiedValueRaw, 0, rawMax ) :
         LIGHT_CLAMP(((unsigned long) (light_Configuration.specifiedValuePercent * ((double)rawMax) ) / 100), 0, rawMax);
-      /* If we are not attempting to set, fail! */
-      if(light_Configuration.operationMode != LIGHT_SET)
-      {
-        fprintf(stderr, "Minimum cap can only be used with get/set operations.\n");
-        return FALSE;
-      }
 
       if(!light_setMinCap(light_Configuration.specifiedController, writeVal))
       {

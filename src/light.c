@@ -113,7 +113,7 @@ LIGHT_BOOL light_parseArguments(int argc, char** argv)
         light_Configuration.controllerMode = LIGHT_SPECIFY;
         if(optarg == NULL)
         {
-          printf("-s NEEDS an argument.\n\n");
+          fprintf(stderr, "-s NEEDS an argument.\n\n");
           light_printHelp();
         }
 
@@ -141,19 +141,19 @@ LIGHT_BOOL light_parseArguments(int argc, char** argv)
       case 'v':
         if(optarg == NULL)
         {
-          printf("-v NEEDS an argument.\n\n");
+          fprintf(stderr, "-v NEEDS an argument.\n\n");
           light_printHelp();
           return FALSE;
         }
         if(sscanf(optarg, "%i", &verbosity) != 1)
         {
-          printf("-v Verbosity is not specified in a recognizable format.\n\n");
+          fprintf(stderr, "-v Verbosity is not specified in a recognizable format.\n\n");
           light_printHelp();
           return FALSE;
         }
         if(verbosity < 0 || verbosity > 3)
         {
-          printf("-v Verbosity has to be between 0 and 3.\n\n");
+          fprintf(stderr, "-v Verbosity has to be between 0 and 3.\n\n");
           light_printHelp();
           return FALSE;
         }
@@ -169,7 +169,7 @@ LIGHT_BOOL light_parseArguments(int argc, char** argv)
   {
     if(argc - optind != 1)
     {
-      printf("Light needs an argument for <value>.\n\n");
+      fprintf(stderr, "Light needs an argument for <value>.\n\n");
       light_printHelp();
       return FALSE;
     }
@@ -177,14 +177,14 @@ LIGHT_BOOL light_parseArguments(int argc, char** argv)
     if(light_Configuration.valueMode == LIGHT_PERCENT)
     {
       if(sscanf(argv[optind], "%lf", &light_Configuration.specifiedValuePercent) != 1){
-        printf("<value> is not specified in a recognizable format.\n\n");
+        fprintf(stderr, "<value> is not specified in a recognizable format.\n\n");
         light_printHelp();
         return FALSE;
       }
       light_Configuration.specifiedValuePercent = LIGHT_CLAMP(light_Configuration.specifiedValuePercent, 0.00, 100.00);
     }else{
       if(sscanf(argv[optind], "%lu", &light_Configuration.specifiedValueRaw) != 1){
-        printf("<value> is not specified in a recognizable format.\n\n");
+        fprintf(stderr, "<value> is not specified in a recognizable format.\n\n");
         light_printHelp();
         return FALSE;
       }

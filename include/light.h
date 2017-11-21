@@ -8,7 +8,7 @@
 #include <linux/limits.h>
 
 #define LIGHT_VER_MAJOR 0
-#define LIGHT_VER_MINOR 9
+#define LIGHT_VER_MINOR 10
 #define LIGHT_VER_TYPE "beta"
 #define LIGHT_YEAR 2014
 #define LIGHT_AUTHOR "Fredrik Haikarainen"
@@ -16,7 +16,7 @@
 #define ASSERT_SET(t,v) \
   if(v)\
   {\
-    printf(t" arguments can not be used in conjunction.\n");\
+    fprintf(stderr, t" arguments can not be used in conjunction.\n");\
     return FALSE;\
   }\
   v = TRUE;

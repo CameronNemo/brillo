@@ -227,7 +227,7 @@ LIGHT_BOOL light_parseArguments(int argc, char** argv)
         light_printHelp();
         return FALSE;
       }
-      light_Configuration.specifiedValuePercent = LIGHT_CLAMP(light_Configuration.specifiedValuePercent, 0.00, 100.00);
+      light_Configuration.specifiedValuePercent = light_clampPercent(light_Configuration.specifiedValuePercent);
     }else{
       if(sscanf(argv[optind], "%lu", &light_Configuration.specifiedValueRaw) != 1){
         fprintf(stderr, "<value> is not specified in a recognizable format.\n\n");
@@ -423,7 +423,6 @@ LIGHT_BOOL light_execute()
   unsigned long   minCap; /* The minimum cap, in raw units */
   double   percentMinCap; /* The minimum cap, in percent */
   LIGHT_BOOL   hasMinCap; /* If we have a minimum cap     */
-  unsigned long writeVal;
 
   LIGHT_VAL_MODE valueMode;
 
@@ -432,16 +431,14 @@ LIGHT_BOOL light_execute()
     return TRUE;
   }
 
-  /* -- First, get the current, min and max values directly from controller/configuration (raw values) */
   if(!light_initExecution(&rawCurr, &rawMax, &hasMinCap, &minCap))
   {
     return FALSE;
   }
 
-  /* -- Secondly, calculate the rest of the values (Clamp them here as well!) */
   valueMode = light_Configuration.valueMode;
-  percentCurr = LIGHT_CLAMP( ((double)rawCurr) /  ((double)rawMax) * 100 , 0.00, 100.00 );
-  percentMinCap = LIGHT_CLAMP( ((double)minCap) / ((double)rawMax) * 100 , 0.00, 100.00 );
+  percentCurr =   light_clampPercent(((double)rawCurr) / ((double)rawMax) * 100);
+  percentMinCap = light_clampPercent(((double)minCap)  / ((double)rawMax) * 100);
 
   LIGHT_NOTE_FMT("executing light on '%s' controller", light_Configuration.specifiedController);
 
@@ -489,14 +486,14 @@ LIGHT_BOOL light_execute()
      light_Configuration.operationMode == LIGHT_ADD ||
      light_Configuration.operationMode == LIGHT_SUB)
   {
+    unsigned long specValueRaw = valueMode == LIGHT_RAW ?
+      light_Configuration.specifiedValueRaw :
+      (unsigned long) ( (light_Configuration.specifiedValuePercent * ((double)rawMax)) / 100.0);
+
     if(light_Configuration.field == LIGHT_MIN_CAP)
     {
       /* Handle minimum cap files */
-      writeVal = valueMode == LIGHT_RAW ?
-        LIGHT_CLAMP( light_Configuration.specifiedValueRaw, 0, rawMax ) :
-        LIGHT_CLAMP(((unsigned long) (light_Configuration.specifiedValuePercent * ((double)rawMax) ) / 100), 0, rawMax);
-
-      if(!light_setMinCap(light_Configuration.specifiedController, writeVal))
+      if(!light_setMinCap(light_Configuration.specifiedController, LIGHT_CLAMP(specValueRaw, 0, rawMax)))
       {
         LIGHT_ERR("could not set minimum cap");
         return FALSE;
@@ -507,27 +504,25 @@ LIGHT_BOOL light_execute()
 
     }else if(light_Configuration.field == LIGHT_BRIGHTNESS){
       /* Handle brightness writing */
+      unsigned long writeVal;
 
       switch(light_Configuration.operationMode)
       {
         case LIGHT_SET:
-          writeVal = valueMode == LIGHT_RAW ?
-            LIGHT_CLAMP( light_Configuration.specifiedValueRaw , minCap, rawMax ) :
-            LIGHT_CLAMP( ((unsigned long) (light_Configuration.specifiedValuePercent * ((double)rawMax) ) / 100) , minCap, rawMax );
+          writeVal = LIGHT_CLAMP(specValueRaw, minCap, rawMax);
           break;
         case LIGHT_ADD:
-          writeVal = valueMode == LIGHT_RAW ?
-            LIGHT_CLAMP( rawCurr + light_Configuration.specifiedValueRaw , minCap, rawMax ) :
-            LIGHT_CLAMP( ((unsigned long) ( (percentCurr + light_Configuration.specifiedValuePercent) * ((double)rawMax)) / 100) , minCap, rawMax );
+          writeVal = LIGHT_CLAMP(rawCurr + specValueRaw, minCap, rawMax);
           break;
         case LIGHT_SUB:
-         if(light_Configuration.specifiedValueRaw > rawCurr){
-           writeVal = LIGHT_CLAMP(0, minCap, rawMax);
-         }else{
-          writeVal = valueMode == LIGHT_RAW ?
-            LIGHT_CLAMP( rawCurr - light_Configuration.specifiedValueRaw , minCap, rawMax ):
-            LIGHT_CLAMP( ((unsigned long) ( (percentCurr - light_Configuration.specifiedValuePercent) * ((double)rawMax)) / 100) , minCap, rawMax );
-         }
+          /* check if we're going below 0, which wouldn't work with unsigned values */
+          if(rawCurr < specValueRaw)
+          {
+            light_logInfClamp(minCap);
+            writeVal = minCap;
+            break;
+          }
+          writeVal = LIGHT_CLAMP(rawCurr - specValueRaw, minCap, rawMax);
          break;
         /* we have already taken other possibilities, so we shouldn't get here */
         default:
@@ -543,11 +538,6 @@ LIGHT_BOOL light_execute()
 
       /* All good? return true. */
       return TRUE;
-
-    }else{
-      /* If we didn't provide a valid field for write operations, fail. */
-      fprintf(stderr, "set/add/subtract operations are only available for brightness and minimum cap files.\n");
-      return FALSE;
     }
   }
 

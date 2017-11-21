@@ -84,8 +84,13 @@ LIGHT_BOOL light_isWritable(char const * filename);
 /* Returns TRUE if file is readable, FALSE otherwise */
 LIGHT_BOOL light_isReadable(char const * filename);
 
-double light_logInfClamp(double x);
+/* Clamps the `percent` value between 0% and 100% */
+double light_clampPercent(double percent);
 
-double light_logSupClamp(double x);
+/* Prints a notice about a value which was below `x` and was adjusted to it */
+unsigned long light_logInfClamp(unsigned long x);
+
+/* Prints a notice about a value which was above `x` and was adjusted to it */
+unsigned long light_logSupClamp(unsigned long x);
 
 #endif /* LIGHT_HELPERS_H */

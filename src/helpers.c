@@ -208,14 +208,27 @@ LIGHT_BOOL light_isReadable(char const * filename)
   return TRUE;
 }
 
-double light_logInfClamp(double x)
+unsigned long light_logInfClamp(unsigned long x)
 {
-  LIGHT_NOTE_FMT("specified value is inferior to %g, so adjusting it to this mininum value", x);
+  LIGHT_NOTE_FMT("specified value is inferior to %lu (raw), so adjusting it to this mininum value", x);
   return x;
 }
 
-double light_logSupClamp(double x)
+unsigned long light_logSupClamp(unsigned long x)
 {
-  LIGHT_NOTE_FMT("specified value is superior to %g, so adjusting it to this maximum value", x);
+  LIGHT_NOTE_FMT("specified value is superior to %lu (raw), so adjusting it to this maximum value", x);
   return x;
+}
+
+double light_clampPercent(double p)
+{
+  if(p < 0.0)
+  {
+    LIGHT_WARN_FMT("specified value %g%% is not valid, adjusting it to 0%%", p);
+    return 0.0;
+  }else if(p > 100.0){
+    LIGHT_WARN_FMT("specified value %g%% is not valid, adjusting it to 100%%", p);
+    return 100.0;
+  }
+  return p;
 }

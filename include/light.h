@@ -5,6 +5,7 @@
 
 #include <sys/types.h>
 #include <dirent.h>
+#include <linux/limits.h>
 
 #define LIGHT_VER_MAJOR 0
 #define LIGHT_VER_MINOR 9
@@ -64,7 +65,7 @@ typedef enum LIGHT_VAL_MODE {
 typedef struct light_runtimeArguments_s {
   /* Which controller to use */
   LIGHT_CTRL_MODE controllerMode;
-  char            specifiedController[256];
+  char            specifiedController[NAME_MAX + 1];
 
   /* What to do with the controller */
   LIGHT_OP_MODE   operationMode;
@@ -80,11 +81,6 @@ typedef struct light_runtimeArguments_s {
   unsigned long   cachedMaxBrightness;
 
 } light_runtimeArguments, *light_runtimeArguments_p;
-
-/* -- Global variables that handles iterating controllers -- */
-struct dirent *light_iterator;
-DIR           *light_iteratorDir;
-char          light_currentController[256];
 
 /* -- Global variable holding the settings for the current run -- */
 light_runtimeArguments light_Configuration;
@@ -116,8 +112,10 @@ void light_free();
 /* SECTION: Controller functionality */
 
 /* WARNING: `buffer` HAS to be freed by the user if not null once returned!
- * Size is always 256 */
+ * Size is always NAME_MAX + 1 */
 LIGHT_BOOL light_genPath(char const *controller, LIGHT_TARGET target, LIGHT_FIELD type, char **buffer);
+
+LIGHT_BOOL light_validControllerName(char const *controller);
 
 LIGHT_BOOL light_getBrightness(char const *controller, unsigned long *v);
 
@@ -127,9 +125,7 @@ LIGHT_BOOL light_setBrightness(char const *controller, unsigned long v);
 
 LIGHT_BOOL light_controllerAccessible(char const *controller);
 
-LIGHT_BOOL light_iterateControllers(void);
-
-/* WARNING: `controller` HAS to be at least 256 bytes */
+/* WARNING: `controller` HAS to be at most NAME_MAX, otherwise fails */
 LIGHT_BOOL light_getBestController(char *controller);
 
 LIGHT_BOOL light_getMinCap(char const *controller, LIGHT_BOOL *hasMinCap, unsigned long *minCap);

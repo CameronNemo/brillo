@@ -11,7 +11,7 @@
 void light_defaultConfig()
 {
   light_Configuration.controllerMode         = LIGHT_AUTO;
-  memset(&light_Configuration.specifiedController, '\0', 256);
+  memset(&light_Configuration.specifiedController, '\0', NAME_MAX + 1);
   light_Configuration.operationMode          = LIGHT_GET;
   light_Configuration.valueMode              = LIGHT_PERCENT;
   light_Configuration.specifiedValueRaw      = 0;
@@ -73,8 +73,6 @@ LIGHT_BOOL light_parseArguments(int argc, char** argv)
   LIGHT_BOOL fieldSet = FALSE;
   LIGHT_BOOL ctrlSet = FALSE;
   LIGHT_BOOL valSet = FALSE;
-
-  unsigned long specLen = 0;
 
   while((currFlag = getopt(argc, argv, "HhVGSAULIObmclkas:prv:")) != -1)
   {
@@ -157,15 +155,13 @@ LIGHT_BOOL light_parseArguments(int argc, char** argv)
           light_printHelp();
         }
 
-        specLen = strlen(optarg);
-        if(specLen > 255)
+        if(!light_validControllerName(optarg))
         {
-          specLen = 255;
+          fprintf(stderr, "can't handle controller '%s'\n", optarg);
+          return FALSE;
         }
-
-        strncpy(light_Configuration.specifiedController, optarg, specLen);
-
-        light_Configuration.specifiedController[255] = '\0';
+        strncpy(light_Configuration.specifiedController, optarg, NAME_MAX);
+        light_Configuration.specifiedController[NAME_MAX] = '\0';
         break;
       /* -- Value modes -- */
       case 'p':
@@ -573,58 +569,92 @@ void light_free()
 
 }
 
-LIGHT_BOOL light_genPath(char const *controller, LIGHT_TARGET target, LIGHT_FIELD type, char **buffer)
+LIGHT_BOOL light_validControllerName(char const *controller)
 {
-  char* returner = malloc(256);
-  int spfVal = -1;
-
-  if(returner == NULL)
+  if(!controller)
   {
-    LIGHT_MEMERR();
-    buffer = NULL;
     return FALSE;
   }
 
-  memset(returner, '\0', 256);
+  if(strlen(controller) > NAME_MAX)
+  {
+    LIGHT_WARN_FMT("controller \"%s\"'s name is too long", controller);
+    return FALSE;
+  }
+  return TRUE;
+}
+
+LIGHT_BOOL light_genPath(char const *controller, LIGHT_TARGET target, LIGHT_FIELD type, char **buffer)
+{
+  char* returner;
+  int spfVal = -1;
+
+  if(!light_validControllerName(controller))
+  {
+    LIGHT_ERR("invalid controller, couldn't generate path");
+    return FALSE;
+  }
+
+  if(!buffer)
+  {
+    LIGHT_ERR("a valid buffer is required");
+    return FALSE;
+  }
+  *buffer = NULL;
+
+  /* PATH_MAX define includes the '\0' character, so no + 1 here*/
+  if((returner = malloc(PATH_MAX)) == NULL)
+  {
+    LIGHT_MEMERR();
+    return FALSE;
+  }
+
   if(target == LIGHT_BACKLIGHT)
   {
     switch(type)
     {
       case LIGHT_BRIGHTNESS:
-        spfVal = sprintf(returner, "/sys/class/backlight/%s/brightness", controller);
+        spfVal = snprintf(returner, PATH_MAX, "/sys/class/backlight/%s/brightness", controller);
         break;
       case LIGHT_MAX_BRIGHTNESS:
-        spfVal = sprintf(returner, "/sys/class/backlight/%s/max_brightness", controller);
+        spfVal = snprintf(returner, PATH_MAX, "/sys/class/backlight/%s/max_brightness", controller);
         break;
       case LIGHT_MIN_CAP:
-        spfVal = sprintf(returner, "/etc/light/mincap/%s", controller);
+        spfVal = snprintf(returner, PATH_MAX, "/etc/light/mincap/%s", controller);
         break;
       case LIGHT_SAVERESTORE:
-        spfVal = sprintf(returner, "/etc/light/save/%s", controller);
+        spfVal = snprintf(returner, PATH_MAX, "/etc/light/save/%s", controller);
         break;
     }
   }else{
     switch(type)
     {
       case LIGHT_BRIGHTNESS:
-        spfVal = sprintf(returner, "/sys/class/leds/%s/brightness", controller);
+        spfVal = snprintf(returner, PATH_MAX, "/sys/class/leds/%s/brightness", controller);
         break;
       case LIGHT_MAX_BRIGHTNESS:
-        spfVal = sprintf(returner, "/sys/class/leds/%s/max_brightness", controller);
+        spfVal = snprintf(returner, PATH_MAX, "/sys/class/leds/%s/max_brightness", controller);
         break;
       case LIGHT_MIN_CAP:
-        spfVal = sprintf(returner, "/etc/light/mincap/kbd/%s", controller);
+        spfVal = snprintf(returner, PATH_MAX, "/etc/light/mincap/kbd/%s", controller);
         break;
       case LIGHT_SAVERESTORE:
-        spfVal = sprintf(returner, "/etc/light/save/kbd/%s", controller);
+        spfVal = snprintf(returner, PATH_MAX, "/etc/light/save/kbd/%s", controller);
         break;
     }
   }
+
   if(spfVal < 0)
   {
-    LIGHT_ERR("sprintf failed");
+    LIGHT_ERR("snprintf failed");
     free(returner);
-    buffer = NULL;
+    return FALSE;
+  }
+
+  /* PATH_MAX define includes the '\0' character, so - 1 here*/
+  if(spfVal > PATH_MAX - 1)
+  {
+    LIGHT_ERR("generated path is too long to be handled");
     return FALSE;
   }
 
@@ -769,77 +799,103 @@ LIGHT_BOOL light_controllerAccessible(char const *controller)
   return TRUE;
 }
 
-LIGHT_BOOL light_iterateControllers()
+LIGHT_BOOL light_prepareControllerIteration(DIR **dir)
 {
-  LIGHT_BOOL dotsKilled = FALSE;
-
-  if(light_iteratorDir == NULL)
+  if(!dir)
   {
-    if(light_Configuration.target == LIGHT_KEYBOARD)
-    {
-      light_iteratorDir = opendir("/sys/class/leds");
-    }
-    else
-    {
-      light_iteratorDir = opendir("/sys/class/backlight");
-    }
-    if(light_iteratorDir == NULL)
-    {
-      LIGHT_ERR("could not open backlight or leds directory in /sys/class");
-      return FALSE;
-    }
+    LIGHT_ERR("specified dir was NULL");
+    return FALSE;
   }
 
-  while(!dotsKilled)
+  if(light_Configuration.target == LIGHT_KEYBOARD)
   {
-    light_iterator = readdir(light_iteratorDir);
-    if(light_iterator == NULL)
+    *dir = opendir("/sys/class/leds");
+  }
+  else
+  {
+    *dir = opendir("/sys/class/backlight");
+  }
+  if(dir == NULL)
+  {
+    LIGHT_ERR("could not open backlight or leds directory in /sys/class");
+    return FALSE;
+  }
+  return TRUE;
+}
+
+LIGHT_BOOL light_iterateControllers(DIR *dir, char *currentController)
+{
+  struct dirent *file;
+  LIGHT_BOOL controllerFound = FALSE;
+
+  if(!dir || !currentController)
+  {
+    LIGHT_ERR("one of the arguments was NULL");
+    return FALSE;
+  }
+
+  while(!controllerFound)
+  {
+    file = readdir(dir);
+    if(file == NULL)
     {
-      if(light_iteratorDir != NULL)
+      return FALSE;
+    }
+
+    if(file->d_name[0] != '.')
+    {
+      if(!light_validControllerName(file->d_name))
       {
-        closedir(light_iteratorDir);
-        light_iteratorDir = NULL;
+        LIGHT_WARN_FMT("invalid controller '%s' found, continuing...", file->d_name);
+        continue;
       }
-      return FALSE;
-    }
-
-    if(light_iterator->d_name[0] != '.')
-    {
-      dotsKilled = TRUE;
+      controllerFound = TRUE;
     }
   }
 
-  strcpy(light_currentController, light_iterator->d_name);
-
+  strncpy(currentController, file->d_name, NAME_MAX);
+  currentController[NAME_MAX] = '\0';
   return TRUE;
 }
 
 LIGHT_BOOL light_getBestController(char *controller)
 {
-  char bestYet[256];
+  DIR *dir;
   unsigned long bestValYet = 0;
   LIGHT_BOOL foundOkController = FALSE;
+  char bestYet[NAME_MAX + 1];
+  char currentController[NAME_MAX + 1];
 
-  memset(bestYet, '\0', 256);
+  if(!controller)
+  {
+    LIGHT_ERR("controller buffer was NULL");
+    return FALSE;
+  }
 
-  while(light_iterateControllers())
+  if(!light_prepareControllerIteration(&dir))
+  {
+    LIGHT_ERR("can't list controllers");
+    return FALSE;
+  }
+
+  while(light_iterateControllers(dir, currentController))
   {
     unsigned long currVal = 0;
 
-    LIGHT_NOTE_FMT("found '%s' controller", light_currentController);
-    if(light_controllerAccessible(light_currentController))
+    LIGHT_NOTE_FMT("found '%s' controller", currentController);
+    if(light_controllerAccessible(currentController))
     {
 
-      if(light_getMaxBrightness(light_currentController, &currVal))
+      if(light_getMaxBrightness(currentController, &currVal))
       {
         if(currVal > bestValYet)
         {
-        foundOkController = TRUE;
-        bestValYet = currVal;
-        memset(bestYet, '\0', 256);
-        strcpy(bestYet, light_currentController);
-        light_Configuration.hasCachedMaxBrightness = TRUE;
-        light_Configuration.cachedMaxBrightness = currVal;
+          foundOkController = TRUE;
+          bestValYet = currVal;
+          strncpy(bestYet, currentController, NAME_MAX);
+          bestYet[NAME_MAX] = '\0';
+          light_Configuration.hasCachedMaxBrightness = TRUE;
+          light_Configuration.cachedMaxBrightness = currVal;
         }else{
           LIGHT_NOTE("ignoring controller as better one already found");
         }
@@ -850,6 +906,8 @@ LIGHT_BOOL light_getBestController(char *controller)
       LIGHT_WARN("controller not accessible");
     }
   }
+
+  closedir(dir);
 
   if(!foundOkController)
   {
@@ -863,9 +921,8 @@ LIGHT_BOOL light_getBestController(char *controller)
     return FALSE;
   }
 
-  memset(controller, '\0', 256);
-  strcpy(controller, bestYet);
-
+  strncpy(controller, bestYet, NAME_MAX);
+  controller[NAME_MAX] = '\0';
   return TRUE;
 }
 
@@ -923,16 +980,20 @@ LIGHT_BOOL light_setMinCap(char const * controller, unsigned long v)
 
 LIGHT_BOOL light_listControllers()
 {
+  DIR *dir;
+  char controller[NAME_MAX + 1];
   LIGHT_BOOL foundController = FALSE;
 
-  while(light_iterateControllers())
+  if(!light_prepareControllerIteration(&dir))
   {
-    if(!foundController)
-    {
-      foundController = TRUE;
-    }
+    LIGHT_ERR("can't list controllers");
+    return FALSE;
+  }
 
-    printf("%s\n", light_currentController);
+  while(light_iterateControllers(dir, controller))
+  {
+    printf("%s\n", controller);
+    foundController = TRUE;
   }
 
   if(!foundController)
@@ -946,6 +1007,7 @@ LIGHT_BOOL light_listControllers()
 
 LIGHT_BOOL light_saveBrightness(char const *controller, unsigned long v){
   char *savePath = NULL;
+
   if(!light_genPath(controller, light_Configuration.target, LIGHT_SAVERESTORE, &savePath))
   {
     LIGHT_ERR("could not generate path to save/restore file");

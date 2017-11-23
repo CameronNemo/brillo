@@ -15,13 +15,13 @@ LIGHT_BOOL light_readUInt(char const * filename, unsigned int *i)
 
   if(!fileHandle)
   {
-    LIGHT_ERR("could not open file for reading");
+    LIGHT_PERMERR("reading");
     return FALSE;
   }
 
   if(fscanf(fileHandle, "%u", &iCopy) != 1)
   {
-    LIGHT_ERR("file contents are corrupt");
+    LIGHT_ERR_FMT("Couldn't parse a positive integer number from '%s'", filename);
     fclose(fileHandle);
     return FALSE;
   }
@@ -40,7 +40,7 @@ LIGHT_BOOL light_writeUInt(char const * filename, unsigned int i)
 
   if(!fileHandle)
   {
-    LIGHT_ERR("could not open file for writing");
+    LIGHT_PERMERR("writing");
     return FALSE;
   }
 
@@ -65,13 +65,13 @@ LIGHT_BOOL light_readULong(char const * filename, unsigned long *i)
 
   if(!fileHandle)
   {
-    LIGHT_ERR("could not open file for reading");
+    LIGHT_PERMERR("reading");
     return FALSE;
   }
 
   if(fscanf(fileHandle, "%lu", &iCopy) != 1)
   {
-    LIGHT_ERR("file contents are corrupt");
+    LIGHT_ERR_FMT("Couldn't parse a positive integer number from '%s'", filename);
     fclose(fileHandle);
     return FALSE;
   }
@@ -90,7 +90,7 @@ LIGHT_BOOL light_writeULong(char const * filename, unsigned long i)
 
   if(!fileHandle)
   {
-    LIGHT_ERR("could not open file for writing");
+    LIGHT_PERMERR("writing");
     return FALSE;
   }
 
@@ -125,7 +125,7 @@ LIGHT_BOOL light_readString(char const * filename, char *buffer, long* size)
 
   if(!fileHandle)
   {
-    LIGHT_ERR("could not open file for reading");
+    LIGHT_PERMERR("reading");
     return FALSE;
   }
 
@@ -182,10 +182,11 @@ LIGHT_BOOL light_isDir(char const * path)
 
 LIGHT_BOOL light_isWritable(char const * filename)
 {
-  FILE* fileHandle = fopen(filename, "w");
+  FILE* fileHandle = fopen(filename, "r+");
 
   if(!fileHandle)
   {
+    LIGHT_PERMWARN("writing");
     return FALSE;
   }
 
@@ -199,9 +200,35 @@ LIGHT_BOOL light_isReadable(char const * filename)
 
   if(!fileHandle)
   {
+    LIGHT_PERMWARN("reading");
     return FALSE;
   }
 
   fclose(fileHandle);
   return TRUE;
+}
+
+unsigned long light_logInfClamp(unsigned long x)
+{
+  LIGHT_NOTE_FMT("specified value is inferior to %lu (raw), so adjusting it to this mininum value", x);
+  return x;
+}
+
+unsigned long light_logSupClamp(unsigned long x)
+{
+  LIGHT_NOTE_FMT("specified value is superior to %lu (raw), so adjusting it to this maximum value", x);
+  return x;
+}
+
+double light_clampPercent(double p)
+{
+  if(p < 0.0)
+  {
+    LIGHT_WARN_FMT("specified value %g%% is not valid, adjusting it to 0%%", p);
+    return 0.0;
+  }else if(p > 100.0){
+    LIGHT_WARN_FMT("specified value %g%% is not valid, adjusting it to 100%%", p);
+    return 100.0;
+  }
+  return p;
 }

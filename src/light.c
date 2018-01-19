@@ -37,7 +37,8 @@ LIGHT_BOOL light_checkOperations()
   switch (light_Configuration.field) {
   case LIGHT_BRIGHTNESS:
     if(op != LIGHT_GET && op != LIGHT_SET &&
-       op != LIGHT_ADD && op != LIGHT_SUB)
+       op != LIGHT_ADD && op != LIGHT_SUB && 
+       op != LIGHT_SAVE && op != LIGHT_RESTORE)
     {
       valid = FALSE;
       fprintf(stderr, "Wrong operation specified for brightness. You can use only -G -S -A or -U\n\n");

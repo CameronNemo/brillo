@@ -8,6 +8,11 @@
 #include <sys/stat.h>
 #include <errno.h>
 
+/**
+ * light_defaultConfig:
+ *
+ * Initialize the default configuration values.
+ **/
 void light_defaultConfig()
 {
   light_Configuration.controllerMode         = LIGHT_AUTO;
@@ -23,6 +28,13 @@ void light_defaultConfig()
   light_verbosity                            = 0;
 }
 
+/**
+ * light_checkOperations:
+ *
+ * Ensure that the operationMode is valid for the configuration's field.
+ *
+ * Returns: FALSE if an invalid operation mode is used, otherwise TRUE.
+ **/
 LIGHT_BOOL light_checkOperations()
 {
   LIGHT_BOOL valid = TRUE;
@@ -64,6 +76,14 @@ LIGHT_BOOL light_checkOperations()
 }
 
 
+/**
+ * light_parseArguments:
+ *
+ * @argc	argument count
+ * @argv	argument array
+ *
+ * Returns: TRUE on success, FALSE on failure
+ **/
 LIGHT_BOOL light_parseArguments(int argc, char** argv)
 {
   int currFlag;
@@ -238,6 +258,11 @@ LIGHT_BOOL light_parseArguments(int argc, char** argv)
   return TRUE;
 }
 
+/**
+ * light_printVersion:
+ *
+ * Prints version and copyright information to standard output.
+ **/
 void light_printVersion(){
   printf("Light %u.%u (%s)\n", LIGHT_VER_MAJOR, LIGHT_VER_MINOR, LIGHT_VER_TYPE);
   printf("Copyright (C) %u %s\n", LIGHT_YEAR, LIGHT_AUTHOR);
@@ -245,6 +270,11 @@ void light_printVersion(){
   printf("warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE\n\n");
 }
 
+/**
+ * light_printHelp:
+ *
+ * Prints help dialog to standard output.
+ **/
 void light_printHelp(){
   printf("Usage: light <options> <value>\n");
   printf("<value> has to be either integral(raw mode) or decimal(percent mode) depending on the specified value mode.\n");
@@ -283,6 +313,15 @@ void light_printHelp(){
   printf("  -v:\t\tSets the verbosity level, (needs argument).\n  \t\t0: Only outputs read values.\n  \t\t1: Read values, Errors.\n  \t\t2: Read values, Errors, Warnings.\n  \t\t3: Read values, Errors, Warnings, Notices.\n\n");
 }
 
+/**
+ * light_initialize:
+ *
+ * Initializes the configuration for the operation being requested.
+ * Ensures the stored configuration directories exist, and that a
+ * valid controller exists.
+ *
+ * Returns:
+ **/
 LIGHT_BOOL light_initialize(int argc, char** argv)
 {
   int mkdirVal;
@@ -344,7 +383,14 @@ LIGHT_BOOL light_initialize(int argc, char** argv)
   return TRUE;
 }
 
-/* Print help and version info */
+/**
+ * light_handleInfo:
+ *
+ * Print help and version info or list controllers,
+ * according to the operationMode.
+ *
+ * Returns: TRUE if info was shown, otherwise FALSE
+ **/
 LIGHT_BOOL light_handleInfo()
 {
   if(light_Configuration.operationMode == LIGHT_PRINT_HELP)
@@ -368,6 +414,13 @@ LIGHT_BOOL light_handleInfo()
   return FALSE;
 }
 
+/**
+ * light_initExecution:
+ *
+ * Initializes values needed to execute the requested operation.
+ *
+ * Returns: TRUE on success, FALSE on failure
+ **/
 LIGHT_BOOL light_initExecution(unsigned long *rawCurr, unsigned long *rawMax, LIGHT_BOOL *hasMinCap, unsigned long *minCap)
 {
   if(light_Configuration.hasCachedMaxBrightness)
@@ -411,6 +464,13 @@ LIGHT_BOOL light_initExecution(unsigned long *rawCurr, unsigned long *rawMax, LI
   return TRUE;
 }
 
+/**
+ * light_execute:
+ *
+ * Executes the requested operation.
+ *
+ * Returns: TRUE on success, FALSE on failure
+ **/
 LIGHT_BOOL light_execute()
 {
   unsigned long rawCurr; /* The current brightness, in raw units */
@@ -565,11 +625,23 @@ LIGHT_BOOL light_execute()
   return FALSE;
 }
 
+/**
+ * light_free:
+ *
+ * Frees the light object. Currently a no-op.
+ **/
 void light_free()
 {
 
 }
 
+/**
+ * light_validControllerName:
+ *
+ * @controller:	name of controller to validate
+ *
+ * Returns: FALSE if controller is too long or NULL, otherwise TRUE
+ **/
 LIGHT_BOOL light_validControllerName(char const *controller)
 {
   if(!controller)
@@ -585,6 +657,22 @@ LIGHT_BOOL light_validControllerName(char const *controller)
   return TRUE;
 }
 
+/**
+ * light_genPath:
+ *
+ * @controller:	name of controller device
+ * @target:	device class being targeted
+ * @type:	field being accessed
+ * @buffer:	pointer to where the generated path will be stored
+ *
+ * Generates a path in /sys or /etc for a given operation and
+ * stores it in the string pointed to by buffer.
+ *
+ * WARNING: this function allocates memory, but does not free it.
+ *          free the value pointed to by buffer after use.
+ *
+ * Returns: TRUE if a path is successfully generated, otherwise FALSE
+ **/
 LIGHT_BOOL light_genPath(char const *controller, LIGHT_TARGET target, LIGHT_FIELD type, char **buffer)
 {
   char* returner;
@@ -663,6 +751,14 @@ LIGHT_BOOL light_genPath(char const *controller, LIGHT_TARGET target, LIGHT_FIEL
   return TRUE;
 }
 
+/**
+ * light_getBrightnessPath:
+ *
+ * @controller:	name of controller device
+ * @path:	pointer to where the generated path will be stored
+ *
+ * Returns: TRUE if a path is successfully generated, otherwise FALSE
+ **/
 LIGHT_BOOL light_getBrightnessPath(char const *controller, char **path)
 {
   if(!light_genPath(controller, light_Configuration.target, LIGHT_BRIGHTNESS, path))
@@ -673,6 +769,16 @@ LIGHT_BOOL light_getBrightnessPath(char const *controller, char **path)
   return TRUE;
 }
 
+/**
+ * light_getBrightness:
+ *
+ * @controller:	name of controller device
+ * @v:		pointer to value being read
+ *
+ * Reads brightness value from the appropriate path.
+ *
+ * Returns: TRUE if value is successfully read, otherwise FALSE
+ **/
 LIGHT_BOOL light_getBrightness(char const *controller, unsigned long *v)
 {
   char *brightnessPath = NULL;
@@ -694,6 +800,14 @@ LIGHT_BOOL light_getBrightness(char const *controller, unsigned long *v)
   return TRUE;
 }
 
+/**
+ * light_getMaxBrightnessPath:
+ *
+ * @controller: name of controller device
+ * @path:       pointer to where the generated path will be stored
+ *
+ * Returns: TRUE if a path is successfully generated, otherwise FALSE
+ **/
 LIGHT_BOOL light_getMaxBrightnessPath(char const *controller, char **path)
 {
   if(!light_genPath(controller, light_Configuration.target, LIGHT_MAX_BRIGHTNESS, path))
@@ -704,6 +818,16 @@ LIGHT_BOOL light_getMaxBrightnessPath(char const *controller, char **path)
   return TRUE;
 }
 
+/**
+ * light_getMaxBrightness:
+ *
+ * @controller: name of controller device
+ * @v:          pointer to value being read
+ *
+ * Reads max brightness value from the appropriate path.
+ *
+ * Returns: TRUE if value is successfully read, otherwise FALSE
+ **/
 LIGHT_BOOL light_getMaxBrightness(char const *controller, unsigned long *v)
 {
   char *maxPath = NULL;
@@ -731,6 +855,16 @@ LIGHT_BOOL light_getMaxBrightness(char const *controller, unsigned long *v)
   return TRUE;
 }
 
+/**
+ * light_setBrightness:
+ *
+ * @controller: name of controller device
+ * @v:		new brightness value
+ *
+ * Sets the brightness for a given controller.
+ *
+ * Returns: TRUE if write was successful, otherwise FALSE
+ **/
 LIGHT_BOOL light_setBrightness(char const *controller, unsigned long v)
 {
   char *brightnessPath = NULL;
@@ -754,6 +888,13 @@ LIGHT_BOOL light_setBrightness(char const *controller, unsigned long v)
   return writeVal;
 }
 
+/**
+ * light_controllerAccessible:
+ *
+ * @controller:	name of controller to check
+ *
+ * Returns: TRUE if controller is accessible, otherwise FALSE
+ **/
 LIGHT_BOOL light_controllerAccessible(char const *controller)
 {
   char *brightnessPath = NULL;
@@ -800,6 +941,16 @@ LIGHT_BOOL light_controllerAccessible(char const *controller)
   return TRUE;
 }
 
+/**
+ * light_prepareControllerIteration:
+ *
+ * @dir:	pointer to store the opened directory at
+ *
+ * Opens the appropriate directory for a target,
+ * and saves the directory in dir.
+ *
+ * Returns: TRUE if directory is successfully opened, otherwise false
+ **/
 LIGHT_BOOL light_prepareControllerIteration(DIR **dir)
 {
   if(!dir)
@@ -824,6 +975,17 @@ LIGHT_BOOL light_prepareControllerIteration(DIR **dir)
   return TRUE;
 }
 
+/**
+ * light_iterateControllers:
+ *
+ * @dir:		opened directory to iterate over
+ * @currentController:	string buffer to store the controller name in
+ *
+ * Iterates over the given directory and stores the name of the first
+ * valid controller found in the string given by currentController.
+ *
+ * Returns: TRUE if a valid controller is found, otherwise FALSE
+ **/
 LIGHT_BOOL light_iterateControllers(DIR *dir, char *currentController)
 {
   struct dirent *file;
@@ -859,6 +1021,16 @@ LIGHT_BOOL light_iterateControllers(DIR *dir, char *currentController)
   return TRUE;
 }
 
+/**
+ * light_getBestController:
+ *
+ * @controller:	string to store the name of the best controller
+ *
+ * Iterates over the appropriate directory and finds the
+ * controller with the highest max brightness.
+ *
+ * Returns: TRUE if a suitable controller is found, otherwise FALSE
+ **/
 LIGHT_BOOL light_getBestController(char *controller)
 {
   DIR *dir;
@@ -927,6 +1099,15 @@ LIGHT_BOOL light_getBestController(char *controller)
   return TRUE;
 }
 
+/**
+ * light_getMinCap:
+ *
+ * @controller:	name of controller device
+ * @hasMinCap:	will be set to TRUE if the controller has a min cap stored
+ * @minCap:	pointer to store the minimum cap value
+ *
+ * Returns: FALSE if could not determine minimum cap, otherwise true
+ **/
 LIGHT_BOOL light_getMinCap(char const * controller, LIGHT_BOOL * hasMinCap, unsigned long * minCap)
 {
  char * mincapPath = NULL;
@@ -958,6 +1139,16 @@ LIGHT_BOOL light_getMinCap(char const * controller, LIGHT_BOOL * hasMinCap, unsi
   return TRUE;
 }
 
+/**
+ * light_setMinCap:
+ *
+ * @controller: name of controller device
+ * @v:          new minimum cap value
+ *
+ * Sets the minimum cap for a given controller.
+ *
+ * Returns: TRUE if write was successful, otherwise FALSE
+ **/
 LIGHT_BOOL light_setMinCap(char const * controller, unsigned long v)
 {
   char * mincapPath = NULL;
@@ -979,6 +1170,14 @@ LIGHT_BOOL light_setMinCap(char const * controller, unsigned long v)
   return TRUE;
 }
 
+/**
+ * light_listControllers:
+ *
+ * Prints controller names for the appropriate target.
+ *
+ * Returns: FALSE if could not list controllers or no
+ * 		controllers found, otherwise TRUE
+ **/
 LIGHT_BOOL light_listControllers()
 {
   DIR *dir;
@@ -1006,6 +1205,16 @@ LIGHT_BOOL light_listControllers()
   return TRUE;
 }
 
+/**
+ * light_saveBrightness:
+ *
+ * @controller: name of controller device
+ * @v:          brightness value to save
+ *
+ * Saves the brightness value for a given controller.
+ *
+ * Returns: TRUE if write was successful, otherwise FALSE
+ **/
 LIGHT_BOOL light_saveBrightness(char const *controller, unsigned long v){
   char *savePath = NULL;
 
@@ -1027,6 +1236,15 @@ LIGHT_BOOL light_saveBrightness(char const *controller, unsigned long v){
   return TRUE;
 }
 
+/**
+ * light_restoreBrightness:
+ *
+ * @controller: name of controller device
+ *
+ * Restores the brightness value for a given controller.
+ *
+ * Returns: TRUE if write was successful, otherwise FALSE
+ **/
 LIGHT_BOOL light_restoreBrightness(char const *controller){
   char *restorePath = NULL;
   unsigned long v = 0;

@@ -320,7 +320,7 @@ void light_printHelp(){
  * Ensures the stored configuration directories exist, and that a
  * valid controller exists.
  *
- * Returns:
+ * Returns: TRUE on success, FALSE on failure
  **/
 LIGHT_BOOL light_initialize(int argc, char** argv)
 {

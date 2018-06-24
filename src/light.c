@@ -174,6 +174,7 @@ LIGHT_BOOL light_parseArguments(int argc, char** argv)
         {
           fprintf(stderr, "-s NEEDS an argument.\n\n");
           light_printHelp();
+          return FALSE;
         }
 
         if(!light_validControllerName(optarg))
@@ -181,8 +182,7 @@ LIGHT_BOOL light_parseArguments(int argc, char** argv)
           fprintf(stderr, "can't handle controller '%s'\n", optarg);
           return FALSE;
         }
-        strncpy(light_Configuration.specifiedController, optarg, NAME_MAX);
-        light_Configuration.specifiedController[NAME_MAX] = '\0';
+        snprintf(light_Configuration.specifiedController, NAME_MAX + 1, "%s", optarg);
         break;
       /* -- Value modes -- */
       case 'p':
@@ -978,20 +978,22 @@ LIGHT_BOOL light_prepareControllerIteration(DIR **dir)
 /**
  * light_iterateControllers:
  *
- * @dir:		opened directory to iterate over
- * @currentController:	string buffer to store the controller name in
+ * @dir:	opened directory to iterate over
+ * @currCtrl:	string to store controller in,
+ * 		with a size no less than NAME_MAX + 1
  *
- * Iterates over the given directory and stores the name of the first
- * valid controller found in the string given by currentController.
+ * Iterates over the directory given by dir,
+ * stores the name of the next valid controller
+ * in the string given by currCtrl.
  *
  * Returns: TRUE if a valid controller is found, otherwise FALSE
  **/
-LIGHT_BOOL light_iterateControllers(DIR *dir, char *currentController)
+LIGHT_BOOL light_iterateControllers(DIR *dir, char *currCtrl)
 {
   struct dirent *file;
   LIGHT_BOOL controllerFound = FALSE;
 
-  if(!dir || !currentController)
+  if(!dir || !currCtrl)
   {
     LIGHT_ERR("one of the arguments was NULL");
     return FALSE;
@@ -1000,24 +1002,25 @@ LIGHT_BOOL light_iterateControllers(DIR *dir, char *currentController)
   while(!controllerFound)
   {
     file = readdir(dir);
+
     if(file == NULL)
     {
       return FALSE;
     }
-
-    if(file->d_name[0] != '.')
+    else if(file->d_name[0] == '.')
     {
-      if(!light_validControllerName(file->d_name))
-      {
-        LIGHT_WARN_FMT("invalid controller '%s' found, continuing...", file->d_name);
-        continue;
-      }
-      controllerFound = TRUE;
+      continue;
     }
+    else if(!light_validControllerName(file->d_name))
+    {
+      LIGHT_WARN_FMT("invalid controller '%s' found, continuing...", file->d_name);
+      continue;
+    }
+
+    controllerFound = TRUE;
   }
 
-  strncpy(currentController, file->d_name, NAME_MAX);
-  currentController[NAME_MAX] = '\0';
+  snprintf(currCtrl, NAME_MAX + 1, "%s", file->d_name);
   return TRUE;
 }
 
@@ -1065,8 +1068,7 @@ LIGHT_BOOL light_getBestController(char *controller)
         {
           foundOkController = TRUE;
           bestValYet = currVal;
-          strncpy(bestYet, currentController, NAME_MAX);
-          bestYet[NAME_MAX] = '\0';
+          snprintf(bestYet, NAME_MAX + 1, "%s", currentController);
           light_Configuration.hasCachedMaxBrightness = TRUE;
           light_Configuration.cachedMaxBrightness = currVal;
         }else{
@@ -1094,8 +1096,7 @@ LIGHT_BOOL light_getBestController(char *controller)
     return FALSE;
   }
 
-  strncpy(controller, bestYet, NAME_MAX);
-  controller[NAME_MAX] = '\0';
+  snprintf(controller, NAME_MAX + 1, "%s", bestYet);
   return TRUE;
 }
 

@@ -3,9 +3,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <errno.h>
 
 /**
  * light_initExecution:
@@ -65,7 +62,7 @@ LIGHT_BOOL light_initExecution(unsigned long *rawCurr, unsigned long *rawMax, un
  * @rawMax:	maximum raw value
  * @minCap:	minimum raw value
  *
- * Prints the appropriate field to standard out.
+ * Executes the get operation, printing the appropriate field to standard out.
  *
  * Returns: TRUE on success, FALSE on failure
  **/

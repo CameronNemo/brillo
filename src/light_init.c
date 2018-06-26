@@ -1,9 +1,7 @@
 #include "light.h"
 
-#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
 #include <getopt.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -326,28 +324,23 @@ void light_printHelp(){
  **/
 LIGHT_BOOL light_initialize()
 {
-  int mkdirVal;
-  LIGHT_OP_MODE mode;
+  int r;
 
-  mode = light_Configuration.operationMode;
-
-  if(mode == LIGHT_SAVE ||
-     (mode == LIGHT_SET && light_Configuration.field == LIGHT_MIN_CAP))
+  if(light_Configuration.operationMode == LIGHT_SAVE ||
+     (light_Configuration.operationMode == LIGHT_SET && light_Configuration.field == LIGHT_MIN_CAP))
   {
     /* Make sure we have a valid /etc/light directory, as well as mincap and save */
-    char const * const dirs[5] = {"/etc/light", "/etc/light/mincap", "/etc/light/save", "/etc/light/mincap/kbd", "/etc/light/save/kbd"};
-    char const * const *dir = dirs;
-    char const * const direrr = "'%s' does not exist and could not be created, make sure this application is run as root.";
+    char const * const dirs[6] = {"/etc/light", "/etc/light/mincap", "/etc/light/save", "/etc/light/mincap/kbd", "/etc/light/save/kbd"};
 
-    while (dir < dirs + 5)
+    for (char const * const *dir = dirs; *dir; dir++)
     {
-      mkdirVal = mkdir(*dir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-      if(mkdirVal != 0 && errno != EEXIST)
+      LIGHT_NOTE_FMT("creating directory '%s'", *dir);
+      r = mkdir(*dir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+      if(r != 0 && errno != EEXIST)
       {
-        LIGHT_ERR_FMT(direrr, *dir);
+        LIGHT_ERR_FMT("could not create directory: %s", strerror(errno));
         return FALSE;
       }
-      ++dir;
     }
   }
 

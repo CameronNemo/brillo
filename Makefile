@@ -4,6 +4,7 @@ endif
 
 BINDIR=$(DESTDIR)$(PREFIX)/bin
 MANDIR=$(DESTDIR)$(PREFIX)/share/man/man1
+PKEDIR=$(DESTDIR)$(PREFIX)/polkit-1/actions
 
 CFLAGS=-std=c99 -O2 -pedantic -Wall -Werror -I"./include" -D_XOPEN_SOURCE=500
 MANFLAGS=-h -h -v -V -N
@@ -19,17 +20,23 @@ $(error "help2man is not installed")
 endif
 	help2man $(MANFLAGS) ./light | gzip - > light.1.gz
 
-install: light man
+polkit:
+	sed 's|@bindir@|$(BINDIR)|g' contrib/light.policy.in >contrib/light.policy
+
+install: light man polkit
 	install -dZ $(BINDIR)
-	install -DZ -m 4755 ./light -t $(BINDIR)
+	install -DZ -m 755 ./light -t $(BINDIR)
 	install -dZ $(MANDIR)
 	install -DZ light.1.gz -t $(MANDIR)
+	install -dZ $(PKEDIR)
+	install -DZ contrib/light.policy -t $(PKEDIR)
 
 uninstall:
 	rm -f $(BINDIR)/light
 	rm -f $(MANDIR)/light.1.gz
+	rm -f $(PKEDIR)/light.policy
 
 clean:
-	rm -vfr *~ light light.1.gz
+	rm -vfr *~ light light.1.gz contrib/light.policy
 
-.PHONY: man install uninstall clean
+.PHONY: man install uninstall clean polkit

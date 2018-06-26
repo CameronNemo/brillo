@@ -29,6 +29,8 @@ I recommend you go with light-git as you might miss important features and bugfi
 
 ### Manual
 
+There is a build dependency on `help2man`.
+
 `make && make install`
 
 **Optional:** If you want to use udev rules instead of suid to manage sysfs permissions, you may skip the `make install` step and instead add something like the following to `/etc/udev/rules.d/90-backlight.rules` after copying your binaries:

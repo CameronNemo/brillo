@@ -409,8 +409,10 @@ LIGHT_BOOL light_handleInfo()
  *
  * Returns: TRUE on success, FALSE on failure
  **/
-LIGHT_BOOL light_initExecution(unsigned long *rawCurr, unsigned long *rawMax, LIGHT_BOOL *hasMinCap, unsigned long *minCap)
+LIGHT_BOOL light_initExecution(unsigned long *rawCurr, unsigned long *rawMax, unsigned long *minCap)
 {
+  LIGHT_BOOL hasMinCap;
+
   if(light_Configuration.hasCachedMaxBrightness)
   {
     *rawMax = light_Configuration.cachedMaxBrightness;
@@ -427,7 +429,6 @@ LIGHT_BOOL light_initExecution(unsigned long *rawCurr, unsigned long *rawMax, LI
   {
     /* Init other values to 0 */
     *rawCurr = *minCap = 0;
-    *hasMinCap = FALSE;
     return TRUE;
   }
 
@@ -437,19 +438,122 @@ LIGHT_BOOL light_initExecution(unsigned long *rawCurr, unsigned long *rawMax, LI
     return FALSE;
   }
 
-  if(!light_getMinCap(light_Configuration.specifiedController, hasMinCap, minCap))
+  if(!light_getMinCap(light_Configuration.specifiedController, &hasMinCap, minCap))
   {
     LIGHT_ERR("could not get min brightness");
     return FALSE;
   }
 
-  if( *hasMinCap && *minCap > *rawMax )
+  if(hasMinCap && *minCap > *rawMax )
   {
-    LIGHT_WARN_FMT("invalid minimum cap (raw) value of '%lu' for controller, ignoring and using 0", *minCap);
-    LIGHT_WARN_FMT("minimum cap must be inferior to '%lu'", *rawMax);
-    minCap = 0;
+    LIGHT_ERR_FMT("invalid minimum cap (raw) value of '%lu' for controller", *minCap);
+    LIGHT_ERR_FMT("minimum cap must be inferior to '%lu'", *rawMax);
+    return FALSE;
   }
   return TRUE;
+}
+
+/**
+ * light_executeGet:
+ *
+ * @rawCurr:	current raw value
+ * @rawMax:	maximum raw value
+ * @minCap:	minimum raw value
+ *
+ * Prints the appropriate field to standard out.
+ *
+ * Returns: TRUE on success, FALSE on failure
+ **/
+LIGHT_BOOL light_executeGet(unsigned long rawCurr, unsigned long rawMax, unsigned long minCap)
+{
+  unsigned long raw;
+  double	pct;
+
+  if (rawMax == 0)
+    return FALSE;
+
+  switch (light_Configuration.field) {
+    case LIGHT_BRIGHTNESS:
+      raw = rawCurr;
+      pct = light_clampPercent(((double)rawCurr) / ((double)rawMax) * 100);
+      break;
+    case LIGHT_MAX_BRIGHTNESS:
+      raw = rawMax;
+      pct = 100.00;
+      break;
+    case LIGHT_MIN_CAP:
+      raw = minCap;
+      pct = light_clampPercent(((double)minCap)  / ((double)rawMax) * 100);
+      break;
+    case LIGHT_SAVERESTORE:
+      return TRUE;
+    default:
+      return FALSE;
+  }
+
+  if (light_Configuration.valueMode == LIGHT_RAW)
+    printf("%lu\n", raw);
+  else
+    printf("%.2f\n", pct);
+
+  return TRUE;
+}
+
+/**
+ * light_executeSet:
+ *
+ * @rawCurr:    current raw value
+ * @rawMax:     maximum raw value
+ * @minCap:     minimum raw value
+ *
+ * Sets the minimum cap or brightness value.
+ *
+ * Returns: TRUE on success, FALSE on failure
+ **/
+LIGHT_BOOL light_executeSet(unsigned long rawCurr, unsigned long rawMax, unsigned long minCap)
+{
+  unsigned long val;
+
+  if (light_Configuration.valueMode == LIGHT_RAW)
+    val = light_Configuration.specifiedValueRaw;
+  else
+    val = (unsigned long) ( (light_Configuration.specifiedValuePercent * ((double)rawMax)) / 100.0);
+
+  /* set the minimum cap */
+  if (light_Configuration.field == LIGHT_MIN_CAP)
+  {
+    if (light_setMinCap(light_Configuration.specifiedController, LIGHT_CLAMP(val, 0, rawMax)))
+      return TRUE;
+    LIGHT_ERR("could not set minimum cap");
+    return FALSE;
+  }
+
+  /* set the brightness */
+
+  if (light_Configuration.field != LIGHT_BRIGHTNESS)
+    return FALSE;
+
+  switch (light_Configuration.operationMode)
+  {
+    case LIGHT_SUB:
+      /* val is unsigned so we need to get back to >= 0 */
+      if(val > rawCurr)
+        val = -rawCurr;
+      else
+        val = -val;
+    case LIGHT_ADD:
+      val += rawCurr;
+    case LIGHT_SET:
+      break;
+    default:
+      return FALSE;
+  }
+
+  if(light_setBrightness(light_Configuration.specifiedController, LIGHT_CLAMP(val, minCap, rawMax)))
+    return TRUE;
+
+  LIGHT_ERR("could not set brightness");
+  return FALSE;
 }
 
 /**
@@ -462,150 +566,41 @@ LIGHT_BOOL light_initExecution(unsigned long *rawCurr, unsigned long *rawMax, LI
 LIGHT_BOOL light_execute()
 {
   unsigned long rawCurr; /* The current brightness, in raw units */
-  double    percentCurr; /* The current brightness, in percent  */
-  unsigned long  rawMax; /* The max brightness, in percent      */
+  unsigned long  rawMax; /* The max brightness, in raw units */
+  unsigned long  minCap; /* The minimum cap, in raw units */
 
-  unsigned long   minCap; /* The minimum cap, in raw units */
-  double   percentMinCap; /* The minimum cap, in percent */
-  LIGHT_BOOL   hasMinCap; /* If we have a minimum cap     */
-
-  LIGHT_VAL_MODE valueMode;
-
-  if(!light_initExecution(&rawCurr, &rawMax, &hasMinCap, &minCap))
-  {
+  if(!light_initExecution(&rawCurr, &rawMax, &minCap))
     return FALSE;
-  }
-
-  valueMode = light_Configuration.valueMode;
-  percentCurr =   light_clampPercent(((double)rawCurr) / ((double)rawMax) * 100);
-  percentMinCap = light_clampPercent(((double)minCap)  / ((double)rawMax) * 100);
 
   LIGHT_NOTE_FMT("executing light on '%s' controller", light_Configuration.specifiedController);
 
-  /* Handle get operations */
-  if(light_Configuration.operationMode == LIGHT_GET)
-  {
-    switch(light_Configuration.field){
-      case LIGHT_BRIGHTNESS:
-        (valueMode == LIGHT_RAW) ? printf("%lu\n", rawCurr) : printf("%.2f\n", percentCurr);
-        break;
-      case LIGHT_MAX_BRIGHTNESS:
-        (valueMode == LIGHT_RAW) ? printf("%lu\n", rawMax) : printf("100.00\n"); /* <- I know how stupid it is but it might just make someones life easier */
-        break;
-      case LIGHT_MIN_CAP:
-        (valueMode == LIGHT_RAW) ? printf("%lu\n", minCap) : printf("%.2f\n", percentMinCap);
-        break;
-      case LIGHT_SAVERESTORE:
-        break;
-    }
-    return TRUE;
-  }
-
-  /* Handle saves and restores*/
-  if(light_Configuration.operationMode == LIGHT_SAVE){
-    if(!light_saveBrightness(light_Configuration.specifiedController, rawCurr))
-    {
-      LIGHT_ERR("could not save brightness");
-      return FALSE;
-    }
-
-    return TRUE;
-  }
-
-  if(light_Configuration.operationMode == LIGHT_RESTORE){
-    if(!light_restoreBrightness(light_Configuration.specifiedController)){
-      LIGHT_ERR("could not restore brightness");
-      return FALSE;
-    }
-
-    return TRUE;
-  }
-
-  /* Handle set/add/sub operations */
-  if(light_Configuration.operationMode == LIGHT_SET ||
-     light_Configuration.operationMode == LIGHT_ADD ||
-     light_Configuration.operationMode == LIGHT_SUB)
-  {
-    unsigned long specValueRaw = valueMode == LIGHT_RAW ?
-      light_Configuration.specifiedValueRaw :
-      (unsigned long) ( (light_Configuration.specifiedValuePercent * ((double)rawMax)) / 100.0);
-
-    if(light_Configuration.field == LIGHT_MIN_CAP)
-    {
-      /* Handle minimum cap files */
-      if(!light_setMinCap(light_Configuration.specifiedController, LIGHT_CLAMP(specValueRaw, 0, rawMax)))
-      {
-        LIGHT_ERR("could not set minimum cap");
-        return FALSE;
-      }
-
-      /* All good? Return true. */
+  switch (light_Configuration.operationMode) {
+  case LIGHT_GET:
+    return light_executeGet(rawCurr, rawMax, minCap);
+  case LIGHT_SAVE:
+    if(light_saveBrightness(light_Configuration.specifiedController, rawCurr))
       return TRUE;
-
-    }else if(light_Configuration.field == LIGHT_BRIGHTNESS){
-      /* Handle brightness writing */
-      unsigned long writeVal;
-
-      switch(light_Configuration.operationMode)
-      {
-        case LIGHT_SET:
-          writeVal = LIGHT_CLAMP(specValueRaw, minCap, rawMax);
-          break;
-        case LIGHT_ADD:
-          writeVal = LIGHT_CLAMP(rawCurr + specValueRaw, minCap, rawMax);
-          break;
-        case LIGHT_SUB:
-          /* check if we're going below 0, which wouldn't work with unsigned values */
-          if(rawCurr < specValueRaw)
-          {
-            light_logInfClamp(minCap);
-            writeVal = minCap;
-            break;
-          }
-          writeVal = LIGHT_CLAMP(rawCurr - specValueRaw, minCap, rawMax);
-         break;
-        /* we have already taken other possibilities, so we shouldn't get here */
-        default:
-          return FALSE;
-      }
-
-      /* Attempt to write */
-      if(!light_setBrightness(light_Configuration.specifiedController, writeVal))
-      {
-        LIGHT_ERR("could not set brightness");
-        return FALSE;
-      }
-
-      /* All good? return true. */
+    LIGHT_ERR("could not save brightness");
+    return FALSE;
+  case LIGHT_RESTORE:
+    if(light_restoreBrightness(light_Configuration.specifiedController))
       return TRUE;
-    }
+    LIGHT_ERR("could not restore brightness");
+    return FALSE;
+  case LIGHT_SET:
+  case LIGHT_SUB:
+  case LIGHT_ADD:
+    return light_executeSet(rawCurr, rawMax, minCap);
+  /* Should not be reached */
+  default:
+    fprintf(stderr, "Controller: %s\nValueRaw: %lu\nValuePercent: %.2f\nOpMode: %u\nValMode: %u\nField: %u\n\n",
+                     light_Configuration.specifiedController, light_Configuration.specifiedValueRaw,
+                     light_Configuration.specifiedValuePercent, light_Configuration.operationMode,
+                     light_Configuration.valueMode, light_Configuration.field);
+    fprintf(stderr, "Invalid combination of commandline arguments.\n");
+    light_printHelp();
+    return FALSE;
   }
-
-  /* Handle saves and restores*/
-  if(light_Configuration.operationMode == LIGHT_SAVE){
-    if(!light_saveBrightness(light_Configuration.specifiedController, rawCurr))
-    {
-      LIGHT_ERR("could not save brightness");
-      return FALSE;
-    }
-
-    return TRUE;
-  }
-
-  if(light_Configuration.operationMode == LIGHT_RESTORE){
-    if(!light_restoreBrightness(light_Configuration.specifiedController)){
-      LIGHT_ERR("could not restore brightness");
-      return FALSE;
-    }
-
-    return TRUE;
-  }
-
-  fprintf(stderr, "Controller: %s\nValueRaw: %lu\nValuePercent: %.2f\nOpMode: %u\nValMode: %u\nField: %u\n\n", light_Configuration.specifiedController, light_Configuration.specifiedValueRaw, light_Configuration.specifiedValuePercent, light_Configuration.operationMode, valueMode, light_Configuration.field);
-
-  fprintf(stderr, "You did not specify a valid combination of commandline arguments. Have some help: \n");
-  light_printHelp();
-  return FALSE;
 }
 
 /**

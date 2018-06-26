@@ -110,5 +110,7 @@ LIGHT_BOOL light_getMinCap(char const *controller, LIGHT_BOOL *hasMinCap, unsign
 LIGHT_BOOL light_setMinCap(char const *controller, unsigned long v);
 LIGHT_BOOL light_saveBrightness(char const *controller, unsigned long v);
 LIGHT_BOOL light_restoreBrightness(char const *controller);
+LIGHT_BOOL light_prepareControllerIteration(DIR **dir);
+LIGHT_BOOL light_iterateControllers(DIR *dir, char *currCtrl);
 
 #endif /* LIGHT_H */

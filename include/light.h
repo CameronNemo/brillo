@@ -82,60 +82,33 @@ typedef struct light_runtimeArguments_s {
 
 } light_runtimeArguments, *light_runtimeArguments_p;
 
-/* -- Global variable holding the settings for the current run -- */
+/* Global variable holding the settings for the current run */
 light_runtimeArguments light_Configuration;
 
-/* Sets default values for the configuration */
+/* Initialization */
+
 void light_defaultConfig();
-
-
-/* Parses the program arguments and sets the configuration accordingly (unsanitized) */
 LIGHT_BOOL light_parseArguments(int argc, char** argv);
-
-/* Prints a header if verbosity level > 0 */
 void light_printVersion(void);
-
-/* Prints help regardless of verbosity level */
 void light_printHelp(void);
+LIGHT_BOOL light_listControllers(void);
+LIGHT_BOOL light_handleInfo(void);
+LIGHT_BOOL light_initialize(void);
 
-/* -- SECTION: Main code -- */
+/* Execution */
 
-/* Initializes the application */
-LIGHT_BOOL light_initialize(int argc, char** argv);
-
-/* Does the work */
 LIGHT_BOOL light_execute(void);
-
-/* Frees up resources */
-void light_free();
-
-/* SECTION: Controller functionality */
-
-/* WARNING: `buffer` HAS to be freed by the user if not null once returned!
- * Size is always NAME_MAX + 1 */
 LIGHT_BOOL light_genPath(char const *controller, LIGHT_TARGET target, LIGHT_FIELD type, char **buffer);
-
 LIGHT_BOOL light_validControllerName(char const *controller);
-
 LIGHT_BOOL light_getBrightness(char const *controller, unsigned long *v);
-
 LIGHT_BOOL light_getMaxBrightness(char const *controller, unsigned long *v);
-
 LIGHT_BOOL light_setBrightness(char const *controller, unsigned long v);
-
 LIGHT_BOOL light_controllerAccessible(char const *controller);
-
 /* WARNING: `controller` HAS to be at most NAME_MAX, otherwise fails */
 LIGHT_BOOL light_getBestController(char *controller);
-
 LIGHT_BOOL light_getMinCap(char const *controller, LIGHT_BOOL *hasMinCap, unsigned long *minCap);
-
 LIGHT_BOOL light_setMinCap(char const *controller, unsigned long v);
-
-LIGHT_BOOL light_listControllers();
-
 LIGHT_BOOL light_saveBrightness(char const *controller, unsigned long v);
-
 LIGHT_BOOL light_restoreBrightness(char const *controller);
 
 #endif /* LIGHT_H */

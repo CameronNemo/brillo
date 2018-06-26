@@ -95,6 +95,8 @@ LIGHT_BOOL light_parseArguments(int argc, char** argv)
   LIGHT_BOOL ctrlSet = FALSE;
   LIGHT_BOOL valSet = FALSE;
 
+  light_defaultConfig();
+
   while((currFlag = getopt(argc, argv, "HhVGSAULIObmclkas:prv:")) != -1)
   {
     switch(currFlag)
@@ -322,26 +324,12 @@ void light_printHelp(){
  *
  * Returns: TRUE on success, FALSE on failure
  **/
-LIGHT_BOOL light_initialize(int argc, char** argv)
+LIGHT_BOOL light_initialize()
 {
   int mkdirVal;
   LIGHT_OP_MODE mode;
 
-  light_defaultConfig();
-  if(!light_parseArguments(argc, argv))
-  {
-    LIGHT_ERR("could not parse arguments");
-    return FALSE;
-  }
   mode = light_Configuration.operationMode;
-
-  /* Just return true for operation modes that do not need initialization */
-  if(mode == LIGHT_PRINT_HELP ||
-     mode == LIGHT_PRINT_VERSION ||
-     mode == LIGHT_LIST_CTRL)
-  {
-      return TRUE;
-  }
 
   if(mode == LIGHT_SAVE ||
      (mode == LIGHT_SET && light_Configuration.field == LIGHT_MIN_CAP))
@@ -483,11 +471,6 @@ LIGHT_BOOL light_execute()
 
   LIGHT_VAL_MODE valueMode;
 
-  if(light_handleInfo())
-  {
-    return TRUE;
-  }
-
   if(!light_initExecution(&rawCurr, &rawMax, &hasMinCap, &minCap))
   {
     return FALSE;
@@ -623,16 +606,6 @@ LIGHT_BOOL light_execute()
   fprintf(stderr, "You did not specify a valid combination of commandline arguments. Have some help: \n");
   light_printHelp();
   return FALSE;
-}
-
-/**
- * light_free:
- *
- * Frees the light object. Currently a no-op.
- **/
-void light_free()
-{
-
 }
 
 /**

@@ -8,7 +8,18 @@
 
 int main(int argc, char** argv)
 {
-  if(!light_initialize(argc, argv))
+  if(!light_parseArguments(argc, argv))
+  {
+    LIGHT_ERR("Arguments parsing failed");
+    return LIGHT_RETURNVAL_INITFAIL;
+  }
+
+  if(light_handleInfo())
+  {
+    return LIGHT_RETURNVAL_SUCCESS;
+  }
+
+  if(!light_initialize())
   {
     LIGHT_ERR("Initialization failed");
     return LIGHT_RETURNVAL_INITFAIL;
@@ -17,10 +28,8 @@ int main(int argc, char** argv)
   if(!light_execute())
   {
     LIGHT_ERR("Execution failed");
-    light_free();
     return LIGHT_RETURNVAL_EXECFAIL;
   }
 
-  light_free();
   return LIGHT_RETURNVAL_SUCCESS;
 }

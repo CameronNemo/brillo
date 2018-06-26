@@ -10,7 +10,7 @@ MANFLAGS=-h -h -v -V -N
 
 HELP2MAN_VERSION := $(shell help2man --version 2>/dev/null)
 
-light: src/helpers.c src/light.c src/main.c
+light: src/helpers.c src/light.c src/light_init.c src/main.c
 	$(CC) $(CFLAGS) -g -o $@ $^
 
 man: light

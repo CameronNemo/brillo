@@ -69,15 +69,6 @@ LIGHT_BOOL light_writeUInt(char const *filename, unsigned int v);
 LIGHT_BOOL light_writeULong(char const *filename, unsigned long v);
 LIGHT_BOOL light_readULong(char const *filename, unsigned long *v);
 
-/* Reads a file into null-terminated `buffer` if able, otherwise returns FALSE
- * If `size` isn't NULL, it will be set to the read size.
- *
- * WARNING: `buffer` HAS to be freed by the user, also make sure it is NULL before passed */
-LIGHT_BOOL light_readString(char const * filename, char * buffer, long * size);
-
-/* Returns TRUE if `path` is a valid directory, FALSE otherwise */
-LIGHT_BOOL light_isDir(char const * path);
-
 /* Returns TRUE if file is writable, FALSE otherwise */
 LIGHT_BOOL light_isWritable(char const * filename);
 

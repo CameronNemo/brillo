@@ -76,7 +76,6 @@ LIGHT_BOOL light_checkOperations()
 
 /**
  * light_parseArguments:
- *
  * @argc	argument count
  * @argv	argument array
  *

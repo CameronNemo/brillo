@@ -57,7 +57,6 @@ LIGHT_BOOL light_initExecution(unsigned long *rawCurr, unsigned long *rawMax, un
 
 /**
  * light_executeGet:
- *
  * @rawCurr:	current raw value
  * @rawMax:	maximum raw value
  * @minCap:	minimum raw value
@@ -103,7 +102,6 @@ LIGHT_BOOL light_executeGet(unsigned long rawCurr, unsigned long rawMax, unsigne
 
 /**
  * light_executeSet:
- *
  * @rawCurr:    current raw value
  * @rawMax:     maximum raw value
  * @minCap:     minimum raw value
@@ -160,7 +158,6 @@ LIGHT_BOOL light_executeSet(unsigned long rawCurr, unsigned long rawMax, unsigne
 
 /**
  * light_execute:
- *
  * Executes the requested operation.
  *
  * Returns: TRUE on success, FALSE on failure
@@ -207,7 +204,6 @@ LIGHT_BOOL light_execute()
 
 /**
  * light_validControllerName:
- *
  * @controller:	name of controller to validate
  *
  * Returns: FALSE if controller is too long or NULL, otherwise TRUE
@@ -229,7 +225,6 @@ LIGHT_BOOL light_validControllerName(char const *controller)
 
 /**
  * light_genPath:
- *
  * @controller:	name of controller device
  * @target:	device class being targeted
  * @type:	field being accessed
@@ -323,7 +318,6 @@ LIGHT_BOOL light_genPath(char const *controller, LIGHT_TARGET target, LIGHT_FIEL
 
 /**
  * light_getBrightnessPath:
- *
  * @controller:	name of controller device
  * @path:	pointer to where the generated path will be stored
  *
@@ -341,7 +335,6 @@ LIGHT_BOOL light_getBrightnessPath(char const *controller, char **path)
 
 /**
  * light_getBrightness:
- *
  * @controller:	name of controller device
  * @v:		pointer to value being read
  *
@@ -372,7 +365,6 @@ LIGHT_BOOL light_getBrightness(char const *controller, unsigned long *v)
 
 /**
  * light_getMaxBrightnessPath:
- *
  * @controller: name of controller device
  * @path:       pointer to where the generated path will be stored
  *
@@ -390,7 +382,6 @@ LIGHT_BOOL light_getMaxBrightnessPath(char const *controller, char **path)
 
 /**
  * light_getMaxBrightness:
- *
  * @controller: name of controller device
  * @v:          pointer to value being read
  *
@@ -427,7 +418,6 @@ LIGHT_BOOL light_getMaxBrightness(char const *controller, unsigned long *v)
 
 /**
  * light_setBrightness:
- *
  * @controller: name of controller device
  * @v:		new brightness value
  *
@@ -460,7 +450,6 @@ LIGHT_BOOL light_setBrightness(char const *controller, unsigned long v)
 
 /**
  * light_controllerAccessible:
- *
  * @controller:	name of controller to check
  *
  * Returns: TRUE if controller is accessible, otherwise FALSE
@@ -513,7 +502,6 @@ LIGHT_BOOL light_controllerAccessible(char const *controller)
 
 /**
  * light_prepareControllerIteration:
- *
  * @dir:	pointer to store the opened directory at
  *
  * Opens the appropriate directory for a target,
@@ -547,7 +535,6 @@ LIGHT_BOOL light_prepareControllerIteration(DIR **dir)
 
 /**
  * light_iterateControllers:
- *
  * @dir:	opened directory to iterate over
  * @currCtrl:	string to store controller in,
  * 		with a size no less than NAME_MAX + 1
@@ -596,7 +583,6 @@ LIGHT_BOOL light_iterateControllers(DIR *dir, char *currCtrl)
 
 /**
  * light_getBestController:
- *
  * @controller:	string to store the name of the best controller
  *
  * Iterates over the appropriate directory and finds the
@@ -672,7 +658,6 @@ LIGHT_BOOL light_getBestController(char *controller)
 
 /**
  * light_getMinCap:
- *
  * @controller:	name of controller device
  * @hasMinCap:	will be set to TRUE if the controller has a min cap stored
  * @minCap:	pointer to store the minimum cap value
@@ -712,7 +697,6 @@ LIGHT_BOOL light_getMinCap(char const * controller, LIGHT_BOOL * hasMinCap, unsi
 
 /**
  * light_setMinCap:
- *
  * @controller: name of controller device
  * @v:          new minimum cap value
  *
@@ -743,7 +727,6 @@ LIGHT_BOOL light_setMinCap(char const * controller, unsigned long v)
 
 /**
  * light_saveBrightness:
- *
  * @controller: name of controller device
  * @v:          brightness value to save
  *
@@ -774,7 +757,6 @@ LIGHT_BOOL light_saveBrightness(char const *controller, unsigned long v){
 
 /**
  * light_restoreBrightness:
- *
  * @controller: name of controller device
  *
  * Restores the brightness value for a given controller.

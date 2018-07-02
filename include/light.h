@@ -65,7 +65,7 @@ typedef enum LIGHT_VAL_MODE {
 typedef struct light_runtimeArguments_s {
   /* Which controller to use */
   LIGHT_CTRL_MODE controllerMode;
-  char            specifiedController[NAME_MAX + 1];
+  char           *specifiedController;
 
   /* What to do with the controller */
   LIGHT_OP_MODE   operationMode;
@@ -77,7 +77,6 @@ typedef struct light_runtimeArguments_s {
   LIGHT_FIELD    field;
 
   /* Cache data */
-  LIGHT_BOOL      hasCachedMaxBrightness;
   unsigned long   cachedMaxBrightness;
 
 } light_runtimeArguments, *light_runtimeArguments_p;
@@ -104,12 +103,12 @@ LIGHT_BOOL light_getMaxBrightness(char const *controller, unsigned long *v);
 LIGHT_BOOL light_setBrightness(char const *controller, unsigned long v);
 LIGHT_BOOL light_controllerAccessible(char const *controller);
 /* WARNING: `controller` HAS to be at most NAME_MAX, otherwise fails */
-LIGHT_BOOL light_getBestController(char *controller);
 LIGHT_BOOL light_getMinCap(char const *controller, LIGHT_BOOL *hasMinCap, unsigned long *minCap);
 LIGHT_BOOL light_setMinCap(char const *controller, unsigned long v);
 LIGHT_BOOL light_saveBrightness(char const *controller, unsigned long v);
 LIGHT_BOOL light_restoreBrightness(char const *controller);
-LIGHT_BOOL light_prepareControllerIteration(DIR **dir);
-LIGHT_BOOL light_iterateControllers(DIR *dir, char *currCtrl);
+DIR  *light_genCtrlIterator();
+char *light_nextCtrl(DIR* dir);
+char *light_getBestCtrl();
 
 #endif /* LIGHT_H */

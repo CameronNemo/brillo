@@ -1,5 +1,6 @@
 #include "light.h"
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <getopt.h>
@@ -14,14 +15,13 @@
 void light_defaultConfig()
 {
   light_Configuration.controllerMode         = LIGHT_AUTO;
-  memset(&light_Configuration.specifiedController, '\0', NAME_MAX + 1);
+  light_Configuration.specifiedController    = NULL;
   light_Configuration.operationMode          = LIGHT_GET;
   light_Configuration.valueMode              = LIGHT_PERCENT;
   light_Configuration.specifiedValueRaw      = 0;
   light_Configuration.specifiedValuePercent  = 0.0;
   light_Configuration.target                 = LIGHT_BACKLIGHT;
   light_Configuration.field                  = LIGHT_BRIGHTNESS;
-  light_Configuration.hasCachedMaxBrightness = FALSE;
   light_Configuration.cachedMaxBrightness    = 0;
   light_verbosity                            = 0;
 }
@@ -78,6 +78,9 @@ LIGHT_BOOL light_checkOperations()
  * light_parseArguments:
  * @argc	argument count
  * @argv	argument array
+ *
+ * WARNING: may allocate a string in light_Configuration.specifiedController,
+ *          but will not free it
  *
  * Returns: TRUE on success, FALSE on failure
  **/
@@ -176,12 +179,12 @@ LIGHT_BOOL light_parseArguments(int argc, char** argv)
           return FALSE;
         }
 
-        if(!optarg || strlen(optarg) > NAME_MAX)
+        if(!optarg || NAME_MAX < strnlen(optarg, NAME_MAX + 1))
         {
           fprintf(stderr, "can't handle controller '%s'\n", optarg);
           return FALSE;
         }
-        snprintf(light_Configuration.specifiedController, NAME_MAX + 1, "%s", optarg);
+        light_Configuration.specifiedController = strndup(optarg, NAME_MAX);
         break;
       /* -- Value modes -- */
       case 'p':
@@ -319,6 +322,9 @@ void light_printHelp(){
  * Ensures the stored configuration directories exist, and that a
  * valid controller exists.
  *
+ * WARNING: may allocate a string in light_Configuration.specifiedController,
+ *          but will not free it
+ *
  * Returns: TRUE on success, FALSE on failure
  **/
 LIGHT_BOOL light_initialize()
@@ -344,21 +350,10 @@ LIGHT_BOOL light_initialize()
   }
 
   /* Make sure we have a valid controller before we proceed */
-  if(light_Configuration.controllerMode == LIGHT_AUTO)
-  {
-    LIGHT_NOTE("Automatic mode -- finding best controller");
-    if(!light_getBestController(light_Configuration.specifiedController))
-    {
-      LIGHT_ERR("could not find suitable controller");
-      return FALSE;
-    }
-  }
-  else if(!light_controllerAccessible(light_Configuration.specifiedController))
-  {
-    LIGHT_ERR_FMT("selected controller '%s' is not valid",
-                  light_Configuration.specifiedController);
+  if((light_Configuration.controllerMode == LIGHT_AUTO &&
+     (light_Configuration.specifiedController = light_getBestCtrl()) == NULL) ||
+     !light_controllerAccessible(light_Configuration.specifiedController))
     return FALSE;
-  }
 
   return TRUE;
 }
@@ -404,26 +399,16 @@ LIGHT_BOOL light_handleInfo()
  **/
 LIGHT_BOOL light_listControllers()
 {
-  DIR *dir;
-  char controller[NAME_MAX + 1];
-  LIGHT_BOOL foundController = FALSE;
+  DIR  *dir;
+  char *controller;
 
-  if(!light_prepareControllerIteration(&dir))
-  {
-    LIGHT_ERR("can't list controllers");
+  if((dir = light_genCtrlIterator()) == NULL)
     return FALSE;
-  }
 
-  while(light_iterateControllers(dir, controller))
+  while((controller = light_nextCtrl(dir)) != NULL)
   {
     printf("%s\n", controller);
-    foundController = TRUE;
-  }
-
-  if(!foundController)
-  {
-    LIGHT_WARN("no controllers found, either check your system or your permissions");
-    return FALSE;
+    free(controller);
   }
 
   return TRUE;

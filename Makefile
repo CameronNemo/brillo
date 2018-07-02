@@ -6,7 +6,7 @@ BINDIR=$(DESTDIR)$(PREFIX)/bin
 MANDIR=$(DESTDIR)$(PREFIX)/share/man/man1
 PKEDIR=$(DESTDIR)$(PREFIX)/polkit-1/actions
 
-CFLAGS=-std=c99 -O2 -pedantic -Wall -Werror -I"./include" -D_XOPEN_SOURCE=500
+CFLAGS=-std=c99 -O2 -pedantic -Wall -Werror -I"./include" -D_XOPEN_SOURCE=700
 MANFLAGS=-h -h -v -V -N
 
 HELP2MAN_VERSION := $(shell help2man --version 2>/dev/null)

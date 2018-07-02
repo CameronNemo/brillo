@@ -15,7 +15,7 @@ LIGHT_BOOL light_initExecution(unsigned long *rawCurr, unsigned long *rawMax, un
 {
   LIGHT_BOOL hasMinCap;
 
-  if(light_Configuration.hasCachedMaxBrightness)
+  if(light_Configuration.cachedMaxBrightness != 0)
   {
     *rawMax = light_Configuration.cachedMaxBrightness;
   }
@@ -221,7 +221,7 @@ char *light_genPath(const char *controller, LIGHT_FIELD type)
   char *path_new;
   int   r;
 
-  if(!controller || strlen(controller) > NAME_MAX)
+  if(!controller || NAME_MAX < strnlen(controller, NAME_MAX + 1))
   {
     LIGHT_ERR_FMT("invalid controller '%s', couldn't generate path", controller);
     return NULL;
@@ -412,9 +412,7 @@ LIGHT_BOOL light_controllerAccessible(char const *controller)
   }
 
   if((brightnessPath = light_genPath(controller, LIGHT_BRIGHTNESS)) == NULL)
-  {
     return FALSE;
-  }
 
   if(light_Configuration.operationMode != LIGHT_GET &&
      light_Configuration.field != LIGHT_MIN_CAP &&
@@ -436,159 +434,120 @@ LIGHT_BOOL light_controllerAccessible(char const *controller)
 }
 
 /**
- * light_prepareControllerIteration:
- * @dir:	pointer to store the opened directory at
+ * light_genCtrlIterator:
  *
- * Opens the appropriate directory for a target,
- * and saves the directory in dir.
+ * Opens the appropriate directory for a target.
  *
- * Returns: TRUE if directory is successfully opened, otherwise false
+ * WARNING: returns an opened directory, which
+ *          should be closed after use
+ *
+ * Returns: directory, or NULL on failure
  **/
-LIGHT_BOOL light_prepareControllerIteration(DIR **dir)
+DIR *light_genCtrlIterator()
 {
-  if(!dir)
-  {
-    LIGHT_ERR("specified dir was NULL");
-    return FALSE;
-  }
+  DIR *dir;
 
   if(light_Configuration.target == LIGHT_KEYBOARD)
-  {
-    *dir = opendir("/sys/class/leds");
-  }
+    dir = opendir("/sys/class/leds");
   else
-  {
-    *dir = opendir("/sys/class/backlight");
-  }
+    dir = opendir("/sys/class/backlight");
+
   if(dir == NULL)
-  {
     LIGHT_ERR("could not open backlight or leds directory in /sys/class");
-    return FALSE;
-  }
-  return TRUE;
+
+  return dir;
 }
 
 /**
- * light_iterateControllers:
+ * light_nextCtrl:
  * @dir:	opened directory to iterate over
- * @currCtrl:	string to store controller in,
- * 		with a size no less than NAME_MAX + 1
  *
- * Iterates over the directory given by dir,
- * stores the name of the next valid controller
- * in the string given by currCtrl.
+ * Iterates over the directory given by dir.
  *
- * Returns: TRUE if a valid controller is found, otherwise FALSE
+ * WARNING: will allocate a string and return it,
+ *          this string should be freed after use
+ *
+ * Returns: name of the next controller, NULL on end of dir or failure
  **/
-LIGHT_BOOL light_iterateControllers(DIR *dir, char *currCtrl)
+char *light_nextCtrl(DIR *dir)
 {
   struct dirent *file;
-  LIGHT_BOOL controllerFound = FALSE;
 
-  if(!dir || !currCtrl)
+  if(!dir)
   {
-    LIGHT_ERR("one of the arguments was NULL");
-    return FALSE;
+    LIGHT_ERR("directory uninitialized");
+    return NULL;
   }
 
-  while(!controllerFound)
+  while((file = readdir(dir)) != NULL)
   {
-    file = readdir(dir);
-
-    if(file == NULL)
-    {
-      return FALSE;
-    }
-    else if(file->d_name[0] == '.')
-    {
+    if(!(file->d_name) || file->d_name[0] == '.')
       continue;
-    }
-    else if(!(file->d_name) || strlen(file->d_name) > NAME_MAX)
+
+    if(NAME_MAX < strnlen(file->d_name, NAME_MAX + 1))
     {
-      LIGHT_WARN_FMT("invalid controller '%s' found, continuing...", file->d_name);
+      LIGHT_WARN("invalid controller found, continuing...");
       continue;
     }
 
-    controllerFound = TRUE;
+    return strndup(file->d_name, NAME_MAX);
   }
 
-  snprintf(currCtrl, NAME_MAX + 1, "%s", file->d_name);
-  return TRUE;
+  return NULL;
 }
 
 /**
- * light_getBestController:
- * @controller:	string to store the name of the best controller
+ * light_getBestCtrl:
  *
  * Iterates over the appropriate directory and finds the
  * controller with the highest max brightness.
  *
- * Returns: TRUE if a suitable controller is found, otherwise FALSE
+ * WARNING: will return an allocated string, which
+ *          should be freed after use
+ *
+ * Returns: best controller, or NULL if no suitable controller is found
  **/
-LIGHT_BOOL light_getBestController(char *controller)
+char *light_getBestCtrl()
 {
   DIR *dir;
-  unsigned long bestValYet = 0;
-  LIGHT_BOOL foundOkController = FALSE;
-  char bestYet[NAME_MAX + 1];
-  char currentController[NAME_MAX + 1];
+  char *best, *next;
 
-  if(!controller)
+  best = NULL;
+
+  LIGHT_NOTE("finding best controller...");
+
+  if((dir = light_genCtrlIterator()) == NULL)
+    return NULL;
+
+  while((next = light_nextCtrl(dir)) != NULL)
   {
-    LIGHT_ERR("controller buffer was NULL");
-    return FALSE;
-  }
+    unsigned long max = 0;
 
-  if(!light_prepareControllerIteration(&dir))
-  {
-    LIGHT_ERR("can't list controllers");
-    return FALSE;
-  }
-
-  while(light_iterateControllers(dir, currentController))
-  {
-    unsigned long currVal = 0;
-
-    LIGHT_NOTE_FMT("found '%s' controller", currentController);
-    if(light_controllerAccessible(currentController))
+    if(light_controllerAccessible(next) && light_getMaxBrightness(next, &max))
     {
-
-      if(light_getMaxBrightness(currentController, &currVal))
-      {
-        if(currVal > bestValYet)
+        if(max > light_Configuration.cachedMaxBrightness)
         {
-          foundOkController = TRUE;
-          bestValYet = currVal;
-          snprintf(bestYet, NAME_MAX + 1, "%s", currentController);
-          light_Configuration.hasCachedMaxBrightness = TRUE;
-          light_Configuration.cachedMaxBrightness = currVal;
-        }else{
-          LIGHT_NOTE("ignoring controller as better one already found");
+          light_Configuration.cachedMaxBrightness = max;
+	  if (best)
+            free(best);
+          best = next;
+          LIGHT_NOTE_FMT("using controller '%s', it is an improvement", best);
+	  continue;
         }
-      }else{
-        LIGHT_WARN("could not read max brightness from file");
-      }
+        LIGHT_NOTE_FMT("ignoring controller '%s', it is not an improvement", next);
     }else{
-      LIGHT_WARN("controller not accessible");
+      LIGHT_WARN_FMT("ignoring controller '%s', not accessible", next);
     }
+
+    free(next);
   }
 
   closedir(dir);
 
-  if(!foundOkController)
-  {
+  if(best == NULL)
     LIGHT_ERR("could not find an accessible controller");
-    return FALSE;
-  }
 
-  if(bestValYet == 0)
-  {
-    LIGHT_ERR("found accessible controller but it's useless/corrupt");
-    return FALSE;
-  }
-
-  snprintf(controller, NAME_MAX + 1, "%s", bestYet);
-  return TRUE;
+  return best;
 }
 
 /**

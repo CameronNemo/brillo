@@ -98,8 +98,7 @@ LIGHT_BOOL light_initialize(void);
 /* Execution */
 
 LIGHT_BOOL light_execute(void);
-LIGHT_BOOL light_genPath(char const *controller, LIGHT_TARGET target, LIGHT_FIELD type, char **buffer);
-LIGHT_BOOL light_validControllerName(char const *controller);
+char      *light_genPath(const char *controller, LIGHT_FIELD type);
 LIGHT_BOOL light_getBrightness(char const *controller, unsigned long *v);
 LIGHT_BOOL light_getMaxBrightness(char const *controller, unsigned long *v);
 LIGHT_BOOL light_setBrightness(char const *controller, unsigned long v);

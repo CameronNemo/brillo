@@ -176,7 +176,7 @@ LIGHT_BOOL light_parseArguments(int argc, char** argv)
           return FALSE;
         }
 
-        if(!light_validControllerName(optarg))
+        if(!optarg || strlen(optarg) > NAME_MAX)
         {
           fprintf(stderr, "can't handle controller '%s'\n", optarg);
           return FALSE;

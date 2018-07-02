@@ -203,134 +203,82 @@ LIGHT_BOOL light_execute()
 }
 
 /**
- * light_validControllerName:
- * @controller:	name of controller to validate
- *
- * Returns: FALSE if controller is too long or NULL, otherwise TRUE
- **/
-LIGHT_BOOL light_validControllerName(char const *controller)
-{
-  if(!controller)
-  {
-    return FALSE;
-  }
-
-  if(strlen(controller) > NAME_MAX)
-  {
-    LIGHT_WARN_FMT("controller \"%s\"'s name is too long", controller);
-    return FALSE;
-  }
-  return TRUE;
-}
-
-/**
  * light_genPath:
  * @controller:	name of controller device
- * @target:	device class being targeted
  * @type:	field being accessed
- * @buffer:	pointer to where the generated path will be stored
  *
  * Generates a path in /sys or /etc for a given operation and
  * stores it in the string pointed to by buffer.
  *
  * WARNING: this function allocates memory, but does not free it.
- *          free the value pointed to by buffer after use.
+ *          free the value pointed to by the return value after use.
  *
- * Returns: TRUE if a path is successfully generated, otherwise FALSE
+ * Returns: the generated path, or NULL on failure
  **/
-LIGHT_BOOL light_genPath(char const *controller, LIGHT_TARGET target, LIGHT_FIELD type, char **buffer)
+char *light_genPath(const char *controller, LIGHT_FIELD type)
 {
-  char* returner;
-  int spfVal = -1;
+  char *path_fmt = NULL;
+  char *path_new;
+  int   r;
 
-  if(!light_validControllerName(controller))
+  if(!controller || strlen(controller) > NAME_MAX)
   {
-    LIGHT_ERR("invalid controller, couldn't generate path");
-    return FALSE;
+    LIGHT_ERR_FMT("invalid controller '%s', couldn't generate path", controller);
+    return NULL;
   }
 
-  if(!buffer)
-  {
-    LIGHT_ERR("a valid buffer is required");
-    return FALSE;
-  }
-  *buffer = NULL;
-
-  /* PATH_MAX define includes the '\0' character, so no + 1 here*/
-  if((returner = malloc(PATH_MAX)) == NULL)
+  if((path_new = malloc(PATH_MAX)) == NULL)
   {
     LIGHT_MEMERR();
-    return FALSE;
+    return NULL;
   }
 
-  if(target == LIGHT_BACKLIGHT)
+  if(light_Configuration.target == LIGHT_BACKLIGHT)
   {
     switch(type)
     {
       case LIGHT_BRIGHTNESS:
-        spfVal = snprintf(returner, PATH_MAX, "/sys/class/backlight/%s/brightness", controller);
+        path_fmt = "/sys/class/backlight/%s/brightness";
         break;
       case LIGHT_MAX_BRIGHTNESS:
-        spfVal = snprintf(returner, PATH_MAX, "/sys/class/backlight/%s/max_brightness", controller);
+        path_fmt = "/sys/class/backlight/%s/max_brightness";
         break;
       case LIGHT_MIN_CAP:
-        spfVal = snprintf(returner, PATH_MAX, "/etc/light/mincap/%s", controller);
+        path_fmt = "/etc/light/mincap/%s";
         break;
       case LIGHT_SAVERESTORE:
-        spfVal = snprintf(returner, PATH_MAX, "/etc/light/save/%s", controller);
+        path_fmt = "/etc/light/save/%s";
         break;
     }
   }else{
     switch(type)
     {
       case LIGHT_BRIGHTNESS:
-        spfVal = snprintf(returner, PATH_MAX, "/sys/class/leds/%s/brightness", controller);
+        path_fmt = "/sys/class/leds/%s/brightness";
         break;
       case LIGHT_MAX_BRIGHTNESS:
-        spfVal = snprintf(returner, PATH_MAX, "/sys/class/leds/%s/max_brightness", controller);
+        path_fmt = "/sys/class/leds/%s/max_brightness";
         break;
       case LIGHT_MIN_CAP:
-        spfVal = snprintf(returner, PATH_MAX, "/etc/light/mincap/kbd/%s", controller);
+        path_fmt = "/etc/light/mincap/kbd/%s";
         break;
       case LIGHT_SAVERESTORE:
-        spfVal = snprintf(returner, PATH_MAX, "/etc/light/save/kbd/%s", controller);
+        path_fmt = "/etc/light/save/kbd/%s";
         break;
     }
   }
 
-  if(spfVal < 0)
+  r = snprintf(path_new, PATH_MAX, path_fmt, controller);
+
+  if(r < 0 || r >= PATH_MAX || path_new == NULL)
   {
-    LIGHT_ERR("snprintf failed");
-    free(returner);
-    return FALSE;
+    LIGHT_ERR("failed to copy generated path into buffer");
+    if (path_new)
+      free(path_new);
+    return NULL;
   }
 
-  /* PATH_MAX define includes the '\0' character, so - 1 here*/
-  if(spfVal > PATH_MAX - 1)
-  {
-    LIGHT_ERR("generated path is too long to be handled");
-    return FALSE;
-  }
-
-  *buffer = returner;
-  return TRUE;
-}
-
-/**
- * light_getBrightnessPath:
- * @controller:	name of controller device
- * @path:	pointer to where the generated path will be stored
- *
- * Returns: TRUE if a path is successfully generated, otherwise FALSE
- **/
-LIGHT_BOOL light_getBrightnessPath(char const *controller, char **path)
-{
-  if(!light_genPath(controller, light_Configuration.target, LIGHT_BRIGHTNESS, path))
-  {
-    LIGHT_ERR("could not generate path to brightness file");
-    return FALSE;
-  }
-  return TRUE;
+  return path_new;
 }
 
 /**
@@ -344,39 +292,24 @@ LIGHT_BOOL light_getBrightnessPath(char const *controller, char **path)
  **/
 LIGHT_BOOL light_getBrightness(char const *controller, unsigned long *v)
 {
-  char *brightnessPath = NULL;
-  LIGHT_BOOL readVal = FALSE;
+  char       *path;
+  LIGHT_BOOL  r;
 
-  if(!light_getBrightnessPath(controller, &brightnessPath))
+  if ((path = light_genPath(controller, LIGHT_BRIGHTNESS)) == NULL)
   {
+    LIGHT_ERR("could not generate path to brightness file");
     return FALSE;
   }
 
-  readVal = light_readULong( brightnessPath , v);
-  free(brightnessPath);
+  r = light_readULong(path, v);
+  free(path);
 
-  if(!readVal)
+  if(!r)
   {
     LIGHT_ERR("could not read value from brightness file");
     return FALSE;
   }
-  return TRUE;
-}
 
-/**
- * light_getMaxBrightnessPath:
- * @controller: name of controller device
- * @path:       pointer to where the generated path will be stored
- *
- * Returns: TRUE if a path is successfully generated, otherwise FALSE
- **/
-LIGHT_BOOL light_getMaxBrightnessPath(char const *controller, char **path)
-{
-  if(!light_genPath(controller, light_Configuration.target, LIGHT_MAX_BRIGHTNESS, path))
-  {
-    LIGHT_ERR("could not generate path to maximum brightness file");
-    return FALSE;
-  }
   return TRUE;
 }
 
@@ -391,17 +324,19 @@ LIGHT_BOOL light_getMaxBrightnessPath(char const *controller, char **path)
  **/
 LIGHT_BOOL light_getMaxBrightness(char const *controller, unsigned long *v)
 {
-  char *maxPath = NULL;
-  LIGHT_BOOL readVal = FALSE;
+  char       *path;
+  LIGHT_BOOL  r;
 
-  if (!light_getMaxBrightnessPath(controller, &maxPath))
+  if ((path = light_genPath(controller, LIGHT_MAX_BRIGHTNESS)) == NULL)
   {
+    LIGHT_ERR("could not generate path to maximum brightness file");
     return FALSE;
   }
-  readVal = light_readULong(maxPath , v);
-  free(maxPath);
 
-  if(!readVal)
+  r = light_readULong(path , v);
+  free(path);
+
+  if(!r)
   {
     LIGHT_ERR("could not read value from max brightness file");
     return FALSE;
@@ -427,25 +362,25 @@ LIGHT_BOOL light_getMaxBrightness(char const *controller, unsigned long *v)
  **/
 LIGHT_BOOL light_setBrightness(char const *controller, unsigned long v)
 {
-  char *brightnessPath = NULL;
-  LIGHT_BOOL writeVal = FALSE;
+  char       *path;
+  LIGHT_BOOL  r;
 
-  if(!light_genPath(controller, light_Configuration.target, light_Configuration.field, &brightnessPath))
+  if((path = light_genPath(controller, light_Configuration.field)) == NULL)
   {
     LIGHT_ERR("could not generate path to brightness file");
     return FALSE;
   }
 
   LIGHT_NOTE_FMT("setting brightness %lu (raw) to controller", v);
-  writeVal = light_writeULong(brightnessPath, v);
+  r = light_writeULong(path, v);
 
-  if(!writeVal)
+  if(!r)
   {
     LIGHT_ERR("could not write value to brightness file");
   }
 
-  free(brightnessPath);
-  return writeVal;
+  free(path);
+  return r;
 }
 
 /**
@@ -463,7 +398,7 @@ LIGHT_BOOL light_controllerAccessible(char const *controller)
   if(light_Configuration.controllerMode == LIGHT_AUTO ||
      light_Configuration.field == LIGHT_MAX_BRIGHTNESS)
   {
-    if(!light_getMaxBrightnessPath(controller, &brightnessPath))
+    if((brightnessPath = light_genPath(controller, LIGHT_MAX_BRIGHTNESS)) == NULL)
     {
       return FALSE;
     }
@@ -476,7 +411,7 @@ LIGHT_BOOL light_controllerAccessible(char const *controller)
     free(brightnessPath);
   }
 
-  if(!light_getBrightnessPath(controller, &brightnessPath))
+  if((brightnessPath = light_genPath(controller, LIGHT_BRIGHTNESS)) == NULL)
   {
     return FALSE;
   }
@@ -568,7 +503,7 @@ LIGHT_BOOL light_iterateControllers(DIR *dir, char *currCtrl)
     {
       continue;
     }
-    else if(!light_validControllerName(file->d_name))
+    else if(!(file->d_name) || strlen(file->d_name) > NAME_MAX)
     {
       LIGHT_WARN_FMT("invalid controller '%s' found, continuing...", file->d_name);
       continue;
@@ -666,32 +601,32 @@ LIGHT_BOOL light_getBestController(char *controller)
  **/
 LIGHT_BOOL light_getMinCap(char const * controller, LIGHT_BOOL * hasMinCap, unsigned long * minCap)
 {
- char * mincapPath = NULL;
+  char *path;
 
- if(!light_genPath(controller, light_Configuration.target, LIGHT_MIN_CAP, &mincapPath))
- {
+  if((path = light_genPath(controller, LIGHT_MIN_CAP)) == NULL)
+  {
     LIGHT_ERR("could not generate path to minimum cap file");
     return FALSE;
- }
+  }
 
-  if(!light_isReadable(mincapPath)){
+  if(!light_isReadable(path)){
     *hasMinCap = FALSE;
     *minCap = 0;
-    free(mincapPath);
+    free(path);
     LIGHT_NOTE("cap file doesn't exist or can't read from it, so assuming a minimum brightness of 0");
     return TRUE;
   }
 
-  if(!light_readULong(mincapPath, minCap))
+  if(!light_readULong(path, minCap))
   {
     LIGHT_ERR("could not read minimum cap from file");
-    free(mincapPath);
+    free(path);
     return FALSE;
   }
 
   *hasMinCap = TRUE;
 
-  free(mincapPath);
+  free(path);
   return TRUE;
 }
 
@@ -706,22 +641,23 @@ LIGHT_BOOL light_getMinCap(char const * controller, LIGHT_BOOL * hasMinCap, unsi
  **/
 LIGHT_BOOL light_setMinCap(char const * controller, unsigned long v)
 {
-  char * mincapPath = NULL;
-  if(!light_genPath(controller, light_Configuration.target, LIGHT_MIN_CAP, &mincapPath))
+  char *path;
+
+  if((path = light_genPath(controller, LIGHT_MIN_CAP)) == NULL)
   {
     LIGHT_ERR("could not generate path to minimum cap file");
     return FALSE;
   }
 
   LIGHT_NOTE_FMT("setting minimum cap to %lu (raw)", v);
-  if(!light_writeULong(mincapPath, v))
+  if(!light_writeULong(path, v))
   {
     LIGHT_ERR("could not write to minimum cap file");
-    free(mincapPath);
+    free(path);
     return FALSE;
   }
 
-  free(mincapPath);
+  free(path);
   return TRUE;
 }
 
@@ -735,23 +671,23 @@ LIGHT_BOOL light_setMinCap(char const * controller, unsigned long v)
  * Returns: TRUE if write was successful, otherwise FALSE
  **/
 LIGHT_BOOL light_saveBrightness(char const *controller, unsigned long v){
-  char *savePath = NULL;
+  char *path;
 
-  if(!light_genPath(controller, light_Configuration.target, LIGHT_SAVERESTORE, &savePath))
+  if((path = light_genPath(controller, LIGHT_SAVERESTORE)) == NULL)
   {
     LIGHT_ERR("could not generate path to save/restore file");
     return FALSE;
   }
 
   LIGHT_NOTE_FMT("saving brightness %lu (raw) to save file\n", v);
-  if(!light_writeULong(savePath, v))
+  if(!light_writeULong(path, v))
   {
     LIGHT_ERR("could not write to save/restore file");
-    free(savePath);
+    free(path);
     return FALSE;
   }
 
-  free(savePath);
+  free(path);
   return TRUE;
 }
 
@@ -764,30 +700,30 @@ LIGHT_BOOL light_saveBrightness(char const *controller, unsigned long v){
  * Returns: TRUE if write was successful, otherwise FALSE
  **/
 LIGHT_BOOL light_restoreBrightness(char const *controller){
-  char *restorePath = NULL;
+  char *path;
   unsigned long v = 0;
 
-  if(!light_genPath(controller, light_Configuration.target, LIGHT_SAVERESTORE, &restorePath))
+  if((path = light_genPath(controller, LIGHT_SAVERESTORE)) == NULL)
   {
     LIGHT_ERR("could not generate path to save/restore file");
     return FALSE;
   }
 
   LIGHT_NOTE("restoring brightness from saved file");
-  if(!light_readULong(restorePath, &v))
+  if(!light_readULong(path, &v))
   {
     LIGHT_ERR("could not read saved value");
-    free(restorePath);
+    free(path);
     return FALSE;
   }
 
   if(!light_setBrightness(controller, v))
   {
     LIGHT_ERR("could not set restored brightness");
-    free(restorePath);
+    free(path);
     return FALSE;
   }
 
-  free(restorePath);
+  free(path);
   return TRUE;
 }

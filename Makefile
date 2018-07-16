@@ -4,7 +4,7 @@ endif
 
 BINDIR=$(DESTDIR)$(PREFIX)/bin
 MANDIR=$(DESTDIR)$(PREFIX)/share/man/man1
-PKEDIR=$(DESTDIR)$(PREFIX)/polkit-1/actions
+PKEDIR=$(DESTDIR)$(PREFIX)/share/polkit-1/actions
 
 CFLAGS=-std=c99 -O2 -pedantic -Wall -Werror -I"./include" -D_XOPEN_SOURCE=700
 MANFLAGS=-h -h -v -V -N
@@ -27,9 +27,9 @@ install: light man polkit
 	install -dZ $(BINDIR)
 	install -DZ -m 755 ./light -t $(BINDIR)
 	install -dZ $(MANDIR)
-	install -DZ light.1.gz -t $(MANDIR)
+	install -DZ -m 644 light.1.gz -t $(MANDIR)
 	install -dZ $(PKEDIR)
-	install -DZ contrib/light.policy -t $(PKEDIR)
+	install -DZ -m 644 contrib/light.policy -t $(PKEDIR)
 
 uninstall:
 	rm -f $(BINDIR)/light

@@ -93,6 +93,7 @@ void light_printHelp(void);
 LIGHT_BOOL light_listControllers(void);
 LIGHT_BOOL light_handleInfo(void);
 LIGHT_BOOL light_initialize(void);
+void light_free(void);
 
 /* Execution */
 

@@ -27,9 +27,11 @@ int main(int argc, char** argv)
 
   if(!light_execute())
   {
+    light_free();
     LIGHT_ERR("Execution failed");
     return LIGHT_RETURNVAL_EXECFAIL;
   }
 
+  light_free();
   return LIGHT_RETURNVAL_SUCCESS;
 }

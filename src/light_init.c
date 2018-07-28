@@ -411,5 +411,19 @@ LIGHT_BOOL light_listControllers()
     free(controller);
   }
 
+  closedir(dir);
+
   return TRUE;
+}
+
+/**
+ * light_free:
+ *
+ * Free the controller pointer.
+ **/
+void light_free()
+{
+  char *c = light_Configuration.specifiedController;
+  if (c)
+    free(c);
 }

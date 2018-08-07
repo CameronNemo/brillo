@@ -5,6 +5,8 @@ endif
 BINDIR=$(DESTDIR)$(PREFIX)/bin
 MANDIR=$(DESTDIR)$(PREFIX)/share/man/man1
 PKEDIR=$(DESTDIR)$(PREFIX)/share/polkit-1/actions
+UDEVDIR=$(DESTDIR)$(PREFIX)/lib/udev/rules.d
+AADIR=$(DESTDIR)/etc/apparmor.d
 
 CFLAGS=-std=c99 -O2 -pedantic -Wall -Werror -D_XOPEN_SOURCE=700
 MANFLAGS=-h -h -v -V -N
@@ -23,18 +25,19 @@ endif
 polkit:
 	sed 's|@bindir@|$(BINDIR)|g' contrib/light.policy.in >contrib/light.policy
 
-install: light man polkit
-	install -dZ $(BINDIR)
+install: man polkit
+	install -dZ $(BINDIR) $(MANDIR) $(PKEDIR) $(UDEVDIR) $(AADIR)
 	install -DZ -m 755 ./light -t $(BINDIR)
-	install -dZ $(MANDIR)
 	install -DZ -m 644 light.1.gz -t $(MANDIR)
-	install -dZ $(PKEDIR)
 	install -DZ -m 644 contrib/light.policy -t $(PKEDIR)
+	install -DZ -m 644 contrib/90-backlight.rules -t $(UDEVDIR)
+	install -DZ -m 644 contrib/usr.bin.light -t $(AADIR)
 
 uninstall:
 	rm -f $(BINDIR)/light
 	rm -f $(MANDIR)/light.1.gz
 	rm -f $(PKEDIR)/light.policy
+	rm -f $(UDEVDIR)/90-backlight.rules
 
 clean:
 	rm -vfr *~ light light.1.gz contrib/light.policy

@@ -1,3 +1,4 @@
-light
-light.1.gz
-contrib/light.policy
+brillo
+brillo.1
+contrib/*brillo.policy
+contrib/light

@@ -266,10 +266,11 @@ LIGHT_BOOL light_parseArguments(int argc, char** argv)
  * Prints version and copyright information to standard output.
  **/
 void light_printVersion(){
-  printf("Light %u.%u (%s)\n", LIGHT_VER_MAJOR, LIGHT_VER_MINOR, LIGHT_VER_TYPE);
-  printf("Copyright (C) %u %s\n", LIGHT_YEAR, LIGHT_AUTHOR);
+  printf("%s %u.%u (%s)\n", LIGHT_PROG, LIGHT_VER_MAJOR, LIGHT_VER_MINOR, LIGHT_VER_TYPE);
+  printf("Copyright (C) %u %s, ", LIGHT_VENDOR_YEAR, LIGHT_VENDOR);
+  printf("%u %s\n", LIGHT_YEAR, LIGHT_AUTHOR);
   printf("This is free software, see the source for copying conditions.  There is NO\n");
-  printf("warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE\n\n");
+  printf("warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE\n");
 }
 
 /**
@@ -278,7 +279,7 @@ void light_printVersion(){
  * Prints help dialog to standard output.
  **/
 void light_printHelp(){
-  printf("Usage: light <options> <value>\n");
+  printf("Usage: %s <options> <value>\n", LIGHT_PROG);
   printf("<value> has to be either integral(raw mode) or decimal(percent mode) depending on the specified value mode.\n");
   printf("<options> can be any of the following:\n\n");
 
@@ -319,8 +320,7 @@ void light_printHelp(){
  * light_initialize:
  *
  * Initializes the configuration for the operation being requested.
- * Ensures the stored configuration directories exist, and that a
- * valid controller exists.
+ * Ensures that a valid controller exists.
  *
  * WARNING: may allocate a string in light_Configuration.specifiedController,
  *          but will not free it
@@ -329,26 +329,6 @@ void light_printHelp(){
  **/
 LIGHT_BOOL light_initialize()
 {
-  int r;
-
-  if(light_Configuration.operationMode == LIGHT_SAVE ||
-     (light_Configuration.operationMode == LIGHT_SET && light_Configuration.field == LIGHT_MIN_CAP))
-  {
-    /* Make sure we have a valid /etc/light directory, as well as mincap and save */
-    char const * const dirs[6] = {"/etc/light", "/etc/light/mincap", "/etc/light/save", "/etc/light/mincap/kbd", "/etc/light/save/kbd"};
-
-    for (char const * const *dir = dirs; *dir; dir++)
-    {
-      LIGHT_NOTE_FMT("creating directory '%s'", *dir);
-      r = mkdir(*dir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-      if(r != 0 && errno != EEXIST)
-      {
-        LIGHT_ERR_FMT("could not create directory: %s", strerror(errno));
-        return FALSE;
-      }
-    }
-  }
-
   /* Make sure we have a valid controller before we proceed */
   if((light_Configuration.controllerMode == LIGHT_AUTO &&
      (light_Configuration.specifiedController = light_getBestCtrl()) == NULL) ||

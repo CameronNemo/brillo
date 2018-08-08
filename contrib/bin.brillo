@@ -1,0 +1,17 @@
+# vim:syntax=apparmor
+
+#include <tunables/global>
+
+@{BRILLO}=brillo
+@{BRILLO_EXEC}=/{,usr/}bin/@{BRILLO}
+
+profile @{BRILLO} @{BRILLO_EXEC} {
+  #include <abstractions/base>
+
+  @{BRILLO_EXEC}    mixr,
+  /etc/@{BRILLO}/** rw,
+
+  /sys/class/{backlight,leds}/   r,
+  /sys/devices/**/brightness     rw,
+  /sys/devices/**/max_brightness r,
+}

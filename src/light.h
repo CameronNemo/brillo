@@ -7,9 +7,12 @@
 #include <dirent.h>
 #include <linux/limits.h>
 
-#define LIGHT_VER_MAJOR 0
-#define LIGHT_VER_MINOR 10
-#define LIGHT_VER_TYPE "beta"
+#define LIGHT_PROG "brillo"
+#define LIGHT_VER_MAJOR 1
+#define LIGHT_VER_MINOR 2
+#define LIGHT_VER_TYPE "rc1"
+#define LIGHT_VENDOR_YEAR 2018
+#define LIGHT_VENDOR "Cameron Nemo"
 #define LIGHT_YEAR 2014
 #define LIGHT_AUTHOR "Fredrik Haikarainen"
 

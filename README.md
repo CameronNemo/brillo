@@ -1,130 +1,181 @@
-# Light
+brillo - Backlight and Keyboard LED control tool
+==================================================
 
-Copyright (C) 2012 - 2014, Fredrik Haikarainen
-This is free software, see the source for copying conditions.  There is NO
-warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE
-
-
-## Description
-
-Light is a program to control backlight controllers under GNU/Linux, it is the successor of lightscript, which was a bash script with the same purpose, and tries to maintain the same functionality.
-
-
-## Features
-
-* Works excellent where other software have been proven unusable or problematic, thanks to how it operates internally and the fact that it does not rely on X.
-* Can automatically figure out the best controller to use, making full use of underlying hardware.
-* Possibility to set a minimum brightness value, as some controllers set the screen to be pitch black at a vaĺue of 0 (or higher).
+- [Introduction](#introduction)
+- [Examples](#examples)
+- [Usage](#usage)
+  - [Operation mode](#operation-mode)
+  - [Value mode](#value-mode)
+  - [Target](#target)
+  - [Field](#field)
+  - [Controller](#controller)
+- [Installation](#installation)
+- [Unpriveleged Access](#unpriveleged-access)
+- [Copyright](#copyright)
 
 
-## Installation
+Introduction
+------------
 
-### Arch Linux
+`brillo` is a program to control backlight controllers on Linux.
 
-If you run Arch Linux, there exists 2 packages;
-* [light-git](https://aur.archlinux.org/packages/light-git) - For the absolutely latest version
-* [light](https://aur.archlinux.org/packages/light) - For the latest tagged release
+Notable features include:
 
-I recommend you go with light-git as you might miss important features and bugfixes if you do not.
+* Automatic best controller detection
+* Ability to save and restore brightness across boots
+* Directly using `sysfs` to set brightness without relying on X
+* Unpriveleged access with no new setuid binaries
 
-### Manual
-
-There is a build dependency on `help2man`.
-
-`make && make install`
-
-**Optional:** If you want to use udev rules instead of suid to manage sysfs permissions, you may skip the `make install` step and instead add something like the following to `/etc/udev/rules.d/90-backlight.rules` after copying your binaries:
-```
-ACTION=="add", SUBSYSTEM=="backlight", RUN+="/bin/chgrp video /sys/class/backlight/%k/brightness"
-ACTION=="add", SUBSYSTEM=="backlight", RUN+="/bin/chmod g+w /sys/class/backlight/%k/brightness"
-```
+Let's get started with a few examples, for details, see below for the
+full description of the different commands, options and how to access
+different controllers.
 
 
-## Usage
+Examples
+--------
 
-This application usually has 5 different criteria on flags to use, which are operation modes, value mode, target, field and controller mode. Flags from these different modes can never be used in conjunction, but all of them do not always have to be specified (although it is recommended to do so for verbosity).
+Get the current brightness in percent
 
-**Note:** This application will only print errors if you are using it incorrectly. If something goes wrong, and you can't figure out why, try setting the verbosity flag with -v:
+    brillo -G
+
+or
+
+    brillo
+
+Increase brightness by 5 percent
+
+    brillo -A 5
+
+Set the minimum cap to 2 in raw value on the `acpi_video0` controller:
+
+    brillo -cr -s acpi_video0 -S 2
+
+Try to set the brightness to 0 after that, it will be changed to the
+minimum 2:
+
+    brillo -r -s acpi_video0 -S 0
+
+Find keyboard controllers:
+
+    brillo -k -L
+
+Activate `ScrollLock` LED, here `input15` is used, but this varies
+between different systems:
+
+    brillo -k -s "input15::scrolllock" -S 100
+
+Usually, LEDs only take 0 or 1 in raw value (i.e. for off/on), so you
+can instead write:
+
+    brillo -kr -s "input15::scrolllock" -S 1
+
+Verify by reading back the max brightness, you should get a value of 1:
+
+    brillo -kr -m -s "input15::scrolllock
+
+
+Usage
+-----
+
+### Operation mode
+
+* `-G`: Get (read) brightness/data from controllers/files
+* `-S VAL`: Set (write)brightness/data to controllers/files
+* `-A VAL`: Like `-S`, but adds the given value
+* `-U VAL`: Like `-S`, but subtracts the given value
+* `-O`: Save the current brightness for later use (usually used on shutdown)
+* `-I`: Restore the previously saved brightness (usually used on boot)
+* `-L`: List available controllers, see below `-k` option as well
+
+Without any options (below) the commands operate on the brightness of an
+automatically selected controller.  Values are given in percent, unless
+the below `r` option is also given.
+
+**Note:** like most UNIX applications, brillo only gives output on
+  errors.  If something goes wrong try the verbosity option `-v VAL`:
 
 * 0: No debug output
 * 1: Errors
 * 2: Errors, warnings
 * 3: Errors, warnings, notices
 
-### Operation modes
+### Value mode
 
-The operation modes describe **what** you want to do.
+Values may be given, or presented, in percent or raw mode.  Raw mode is
+the format specific to the controller.  The default is in percent, but
+raw mode may be required for precise control, or when the steps are very
+few, e.g. for most keyboard backlight controllers.
 
-* -G: Which **reads/gets** brightness/data from controllers/files
-* -S: Which **writes/sets** brightness/data to controllers/files
-* -A: Which does like -S but instead **adds** the value
-* -U: Which does like -S but instead '**subtracts** the value
-* -O: Save the current brightness for later use (usually used on shutdown)
-* -I: Restore the previously saved brightness (usually used on boot)
-* -L: List the available controllers
-
-When used by themselves operate on the brightness of a controller that is selected automatically. S, A and U needs another argument -- except for the main 4 criteria -- which is the value to set/add/subtract.   This can be specified either in percent or in raw values, but remember to specify the value mode (read below) if you want to write raw values.
-
-### Value modes
-
-The value mode specify in what unit you want to read or write values in. The default one (if not specified) is in percent, the other one is raw mode and should always be used when you need very precise values (or only have a controller with a very small amount of brightness levels).
-
-* -p: Percent
-* -r: Raw mode
-
-Remember, this is the unit that will be used when you set, get, add or subtract brightness values.
+* `-p`: Percent, default
+* `-r`: Raw mode
 
 ### Target
 
-You can choose which target to act on:
+By default the screen is the active target for all commands, use `-k` to
+select the keyboard instead.  In either case you may need to select a
+different controller, see below.
 
-* -l: Act on screen backlight
-* -k: Act on keyboard backlight and LEDs
+* `-l`: Act on screen backlight, default
+* `-k`: Act on keyboard backlight and LEDs
 
 ### Field
 
-As you can not only handle the **brightness** of controllers, you may also specify a field to read/write from/to:
+By default commands act on the brightness property, which is read+write.
+The maximum brightness is a read-only property.  The minimum brightness
+cap is a feature implemented to protect against setting brightness too
+low, since some controllers make the screen go pitch black at 0%.  For
+controllers like that it is recommended to set this value.
 
-* -b: Current brightness of selected controller
-* -m: Maximum brightness of selected controller
-* -c: Minimum brightness (cap) of selected controller
+* `-b`: Current brightness of selected controller, default
+* `-m`: Max. brightness of selected controller
+* `-c`: Min. brightness (cap) of selected controller (recommend raw mode)
 
-The minimum brightness is a feature implemented as some controllers make the screen go pitch black at 0%, if you have a controller like that, it is recommended to set this value (in either percent or in raw mode). These values will be saved in raw mode though, so if you specify it in percent it might not be too accurate depending on your controller.
+### Controller
 
-### Controller modes
+The default controller is automatically selected for maximum precision, but this can be overridden.
 
-Finally, you can either use the built-in controller selection to get the controller with the maximum precision, or you can specify one manually with the -s flag. The -a flag will force automatic mode and is default. Use -L to get a list of controllers to use with the -s flag (to specify which controller to use). 
+* `-a`: Automatic controller selection (default)
+* `-s ARG`: Manual controller selection
 
-**Notice: You _need_ to include the `-s` or `-a` flag on _every_ command you run. The controller setting will _not_ be stored anywhere! If you do not use any of the flags, it will always default to automatic selection.**
+The `-L` and `-Lk` commands list available controllers for the backlight and keyboard targets, respectively.
 
-### Examples
+Installation
+------------
 
-Get the current brightness in percent
+Typical build and installation process:
 
-`light -G`, or simply `light`
+    make dist
+    # PREFIX is /usr by default
+    sudo make install
 
-Increase brightness by 5 percent
+To simply compile the binary without installing, run `make`. Note that unpriveleged access may not be available.
 
-`light -A 5`
+Unpriveleged Access
+-------------------
 
-Set the minimum cap to 2 in raw value on the acpi_video0 controller:
+### polkit
 
-`light -Scrs "acpi_video0" 2`
+Any active usercan invoke `brillo` through the `pkexec` command to escalate priveleges to root. This will only work from an active session created by (e)logind or ConsoleKit.
 
-Try to set the brightness to 0 after that, it will be changed to the minimum 2
+Examples:
 
-`light -Srs "acpi_video0" 0`
+    pkexec brillo -O
+    pkexec brillo -A 5
 
-Find keyboard controllers
+### udev
 
-`light -Lk`
+`brillo` uses a udev rule to grant necessary permissions to the `video` group. Any user in this group can modify the brightness directly without the use of `pkexec`.
 
-Activate `ScrollLock` LED
+>Note: two features, storing brightness and setting mincap values, will only work with one user at a time in this mode.
 
-`light -Sks "input15::scrolllock" 100`
+### lightscript
 
-Usually, LEDs only take 0 or 1 in raw value (i.e. for off/on), so you can write
+`brillo` is a fork of the popular [light](https://github.com/haikarainen/light) program. A compatibility script is provided that is a drop-in replacement for `light`. To install it, run `sudo make install-lightscript`. This is a wrapper around the polkit access method.
 
-`light -Skrs "input15::scrolllock" 1`
+Copyright
+-------------------
 
-Verify this with `light -v3 -mkrs input15::scrolllock`, you should get a max. brightness of 1
+Copyright (C) 2018 Cameron Nemo, 2014 Fredrik Haikarainen
+
+This is free software, see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE

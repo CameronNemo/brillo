@@ -211,14 +211,13 @@ LIGHT_BOOL light_execute()
  * stores it in the string pointed to by buffer.
  *
  * WARNING: this function allocates memory, but does not free it.
- *          free the value pointed to by the return value after use.
+ *          free the data pointed to by the return value after use.
  *
  * Returns: the generated path, or NULL on failure
  **/
 char *light_genPath(const char *controller, LIGHT_FIELD type)
 {
-  char *path_fmt = NULL;
-  char *path_new;
+  char *path_new, *path_fmt, *path_prefix, *subsystem;
   int   r;
 
   if(!controller || NAME_MAX < strnlen(controller, NAME_MAX + 1))
@@ -233,42 +232,43 @@ char *light_genPath(const char *controller, LIGHT_FIELD type)
     return NULL;
   }
 
+  if (type == LIGHT_BRIGHTNESS || type == LIGHT_MAX_BRIGHTNESS)
+    path_prefix = "/sys/class";
+  else if (type == LIGHT_MIN_CAP || type == LIGHT_SAVERESTORE)
+    path_prefix = "/var/cache/" LIGHT_PROG;
+  else
+    return NULL;
+
   if(light_Configuration.target == LIGHT_BACKLIGHT)
+    subsystem = "backlight";
+  else
+    subsystem = "leds";
+
+  switch(type)
   {
-    switch(type)
-    {
-      case LIGHT_BRIGHTNESS:
-        path_fmt = "/sys/class/backlight/%s/brightness";
-        break;
-      case LIGHT_MAX_BRIGHTNESS:
-        path_fmt = "/sys/class/backlight/%s/max_brightness";
-        break;
-      case LIGHT_MIN_CAP:
-        path_fmt = "/etc/light/mincap/%s";
-        break;
-      case LIGHT_SAVERESTORE:
-        path_fmt = "/etc/light/save/%s";
-        break;
-    }
-  }else{
-    switch(type)
-    {
-      case LIGHT_BRIGHTNESS:
-        path_fmt = "/sys/class/leds/%s/brightness";
-        break;
-      case LIGHT_MAX_BRIGHTNESS:
-        path_fmt = "/sys/class/leds/%s/max_brightness";
-        break;
-      case LIGHT_MIN_CAP:
-        path_fmt = "/etc/light/mincap/kbd/%s";
-        break;
-      case LIGHT_SAVERESTORE:
-        path_fmt = "/etc/light/save/kbd/%s";
-        break;
-    }
+    case LIGHT_BRIGHTNESS:
+      path_fmt = "%s/%s/%s/brightness";
+      break;
+    case LIGHT_MAX_BRIGHTNESS:
+      path_fmt = "%s/%s/%s/max_brightness";
+      break;
+    case LIGHT_MIN_CAP:
+      path_fmt = "%s/%s.%s.mincap";
+      break;
+    case LIGHT_SAVERESTORE:
+      path_fmt = "%s/%s.%s.brightness";
+      break;
+    default:
+      return NULL;
   }
 
-  r = snprintf(path_new, PATH_MAX, path_fmt, controller);
+  if((path_new = malloc(PATH_MAX)) == NULL)
+  {
+    LIGHT_MEMERR();
+    return NULL;
+  }
+
+  r = snprintf(path_new, PATH_MAX, path_fmt, path_prefix, subsystem, controller);
 
   if(r < 0 || r >= PATH_MAX || path_new == NULL)
   {

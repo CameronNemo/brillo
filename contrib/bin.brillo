@@ -3,13 +3,18 @@
 #include <tunables/global>
 
 @{BRILLO}=brillo
-@{BRILLO_EXEC}=/{,usr/}bin/@{BRILLO}
+@{BRILLO_EXEC}=/{,usr/,usr/local/}bin/@{BRILLO}
 
 profile @{BRILLO} @{BRILLO_EXEC} {
   #include <abstractions/base>
 
-  @{BRILLO_EXEC}    mixr,
-  /etc/@{BRILLO}/** rw,
+  @{BRILLO_EXEC}          mixr,
+  /var/cache/@{BRILLO}    rw,
+  /var/cache/@{BRILLO}/** rw,
+
+  # unpriveleged mode
+  owner @{HOME}/.config/@{BRILLO}    rw,
+  owner @{HOME}/.config/@{BRILLO}/** rw,
 
   /sys/class/{backlight,leds}/   r,
   /sys/devices/**/brightness     rw,

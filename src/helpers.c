@@ -94,7 +94,7 @@ unsigned long light_log_clamp_max(unsigned long x)
 	return x;
 }
 
-double light_clampPercent(double p)
+double light_clamp_pct(double p)
 {
 	if (p < 0.0) {
 		LIGHT_WARN

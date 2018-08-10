@@ -45,7 +45,7 @@ bool light_test_w(char const *filename);
 bool light_test_r(char const *filename);
 
 /* Clamps the `percent` value between 0% and 100% */
-double light_clampPercent(double percent);
+double light_clamp_pct(double percent);
 
 /* Prints a notice about a value which was below `x` and was adjusted to it */
 unsigned long light_log_clamp_min(unsigned long x);

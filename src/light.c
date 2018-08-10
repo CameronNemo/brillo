@@ -4,43 +4,43 @@
 #include <errno.h>
 
 /**
- * light_initExecution:
+ * light_exec_init:
  *
  * Initializes values needed to execute the requested operation.
  *
  * Returns: true on success, false on failure
  **/
-bool light_initExecution(unsigned long *rawCurr, unsigned long *rawMax,
-			       unsigned long *minCap)
+bool light_exec_init(unsigned long *curr, unsigned long *max, unsigned long *mincap)
 {
 	if (light_conf.cached_max != 0) {
-		*rawMax = light_conf.cached_max;
-	} else if (!light_fetch(light_conf.ctrl, LIGHT_MAX_BRIGHTNESS, rawMax)) {
+		*max = light_conf.cached_max;
+	} else if (!light_fetch(light_conf.ctrl, LIGHT_MAX_BRIGHTNESS, max)) {
 		LIGHT_ERR("could not get max brightness");
 		return false;
 	}
 
 	/* No need to go further if targetting mincap */
-	if (light_conf.field == LIGHT_MIN_CAP ||
+	if ((light_conf.field == LIGHT_MIN_CAP &&
+	     light_conf.op_mode == LIGHT_SET) ||
 	    light_conf.field == LIGHT_MAX_BRIGHTNESS) {
 		/* Init other values to 0 */
-		*rawCurr = *minCap = 0;
+		*curr = *mincap = 0;
 		return true;
 	}
 
-	if (!light_fetch(light_conf.ctrl, LIGHT_BRIGHTNESS, rawCurr)) {
+	if (!light_fetch(light_conf.ctrl, LIGHT_BRIGHTNESS, curr)) {
 		LIGHT_ERR("could not get brightness");
 		return false;
 	}
 
-	if (!light_fetch_mincap(light_conf.ctrl, minCap)) {
+	if (!light_fetch_mincap(light_conf.ctrl, mincap)) {
 		LIGHT_ERR("could not get mincap");
 		return false;
 	}
 
-	if (*minCap > *rawMax) {
-		LIGHT_ERR("invalid mincap value of '%lu'", *minCap);
-		LIGHT_ERR("mincap must be inferior to '%lu'", *rawMax);
+	if (*mincap > *max) {
+		LIGHT_ERR("invalid mincap value of '%lu'", *mincap);
+		LIGHT_ERR("mincap must be inferior to '%lu'", *max);
 		return false;
 	}
 
@@ -48,40 +48,35 @@ bool light_initExecution(unsigned long *rawCurr, unsigned long *rawMax,
 }
 
 /**
- * light_executeGet:
- * @rawCurr:	current raw value
- * @rawMax:	maximum raw value
- * @minCap:	minimum raw value
+ * light_exec_get:
+ * @curr:	current raw value
+ * @max:	maximum raw value
+ * @mincap:	minimum raw value
  *
  * Executes the get operation, printing the appropriate field to standard out.
  *
  * Returns: true on success, false on failure
  **/
-bool light_executeGet(unsigned long rawCurr, unsigned long rawMax,
-			    unsigned long minCap)
+bool light_exec_get(unsigned long curr, unsigned long max, unsigned long mincap)
 {
 	unsigned long raw;
 	double pct;
 
-	if (rawMax == 0)
+	if (max == 0)
 		return false;
 
 	switch (light_conf.field) {
 	case LIGHT_BRIGHTNESS:
-		raw = rawCurr;
-		pct =
-		    light_clampPercent(((double)rawCurr) / ((double)rawMax) *
-				       100);
+		raw = curr;
+		pct = light_clamp_pct(((double)curr) / ((double)max) * 100);
 		break;
 	case LIGHT_MAX_BRIGHTNESS:
-		raw = rawMax;
+		raw = max;
 		pct = 100.00;
 		break;
 	case LIGHT_MIN_CAP:
-		raw = minCap;
-		pct =
-		    light_clampPercent(((double)minCap) / ((double)rawMax) *
-				       100);
+		raw = mincap;
+		pct = light_clamp_pct(((double)mincap) / ((double)max) * 100);
 		break;
 	case LIGHT_SAVERESTORE:
 		return true;
@@ -98,62 +93,46 @@ bool light_executeGet(unsigned long rawCurr, unsigned long rawMax,
 }
 
 /**
- * light_executeSet:
- * @rawCurr:    current raw value
- * @rawMax:     maximum raw value
- * @minCap:     minimum raw value
+ * light_exec_set:
+ * @curr:	current raw value
+ * @max:	maximum raw value
+ * @mincap:	minimum raw value
  *
  * Sets the minimum cap or brightness value.
  *
  * Returns: true on success, false on failure
  **/
-bool light_executeSet(unsigned long rawCurr, unsigned long rawMax,
-			    unsigned long minCap)
+bool light_exec_set(unsigned long curr, unsigned long max,
+			    unsigned long mincap)
 {
 	unsigned long val;
 
 	if (light_conf.val_mode == LIGHT_RAW)
 		val = light_conf.val_raw;
 	else
-		val =
-		    (unsigned long)((light_conf.val_pct * ((double)rawMax)) /
-				    100.0);
+		val = (unsigned long)((light_conf.val_pct * ((double)max)) / 100.0);
 
-	/* set the minimum cap */
-	if (light_conf.field == LIGHT_MIN_CAP) {
-		if (light_setMinCap
-		    (light_conf.ctrl, LIGHT_CLAMP(val, 0, rawMax)))
-			return true;
-		LIGHT_ERR("could not set minimum cap");
+	if (light_conf.field == LIGHT_BRIGHTNESS) {
+		switch (light_conf.op_mode) {
+		case LIGHT_SUB:
+			/* val is unsigned so we need to get back to >= 0 */
+			if (val > curr)
+				val = -curr;
+			else
+				val = -val;
+		case LIGHT_ADD:
+			val += curr;
+		case LIGHT_SET:
+			break;
+		default:
+			return false;
+		}
+	} else if (light_conf.field != LIGHT_MIN_CAP) {
 		return false;
 	}
 
-	/* set the brightness */
-
-	if (light_conf.field != LIGHT_BRIGHTNESS)
-		return false;
-
-	switch (light_conf.op_mode) {
-	case LIGHT_SUB:
-		/* val is unsigned so we need to get back to >= 0 */
-		if (val > rawCurr)
-			val = -rawCurr;
-		else
-			val = -val;
-	case LIGHT_ADD:
-		val += rawCurr;
-	case LIGHT_SET:
-		break;
-	default:
-		return false;
-	}
-
-	if (light_setBrightness
-	    (light_conf.ctrl, LIGHT_CLAMP(val, minCap, rawMax)))
-		return true;
-
-	LIGHT_ERR("could not set brightness");
-	return false;
+	val = LIGHT_CLAMP(val, mincap, max);
+	return light_set (light_conf.ctrl, light_conf.field, val);
 }
 
 /**
@@ -164,34 +143,28 @@ bool light_executeSet(unsigned long rawCurr, unsigned long rawMax,
  **/
 bool light_execute()
 {
-	unsigned long rawCurr;	/* The current brightness, in raw units */
-	unsigned long rawMax;	/* The max brightness, in raw units */
-	unsigned long minCap;	/* The minimum cap, in raw units */
+	unsigned long curr;	/* The current brightness, in raw units */
+	unsigned long max;	/* The max brightness, in raw units */
+	unsigned long mincap;	/* The minimum cap, in raw units */
 
-	if (!light_initExecution(&rawCurr, &rawMax, &minCap))
+	if (!light_exec_init(&curr, &max, &mincap))
 		return false;
 
 	LIGHT_NOTE("executing light on '%s' controller", light_conf.ctrl);
 
 	switch (light_conf.op_mode) {
 	case LIGHT_GET:
-		return light_executeGet(rawCurr, rawMax, minCap);
+		return light_exec_get(curr, max, mincap);
 	case LIGHT_SAVE:
-		if (light_saveBrightness(light_conf.ctrl, rawCurr))
-			return true;
-		LIGHT_ERR("could not save brightness");
-		return false;
+		return light_set(light_conf.ctrl, LIGHT_SAVERESTORE, curr);
 	case LIGHT_RESTORE:
-		if (light_restoreBrightness(light_conf.ctrl))
-			return true;
-		LIGHT_ERR("could not restore brightness");
-		return false;
+		return light_restore(light_conf.ctrl);
 	case LIGHT_SET:
 	case LIGHT_SUB:
 	case LIGHT_ADD:
-		return light_executeSet(rawCurr, rawMax, minCap);
-		/* Should not be reached */
+		return light_exec_set(curr, max, mincap);
 	default:
+		/* Should not be reached */
 		fprintf(stderr,
 			"Controller: %s\nValueRaw: %lu\nValuePercent: %.2f\nOpMode: %u\nValMode: %u\nField: %u\n\n",
 			light_conf.ctrl, light_conf.val_raw, light_conf.val_pct,
@@ -286,52 +259,48 @@ char *light_path_new(const char *controller, LIGHT_FIELD type)
  *
  * Returns: true if value is successfully read, otherwise false
  **/
-bool light_fetch(char const *controller, LIGHT_FIELD f, unsigned long *v)
+bool light_fetch(char const *controller, LIGHT_FIELD field, unsigned long *v)
 {
 	char *path;
 	bool r;
 
-	if (!(path = light_path_new(controller, f)))
+	if (!(path = light_path_new(controller, field)))
 		return false;
 
 	LIGHT_NOTE("fetching value from '%s'", path);
 
 	r = light_read_val(path, v);
 	free(path);
-
-	if (!r)
-		return false;
-	else
-		return true;
+	return r;
 }
 
 /**
- * light_setBrightness:
+ * light_set:
  * @controller: name of controller device
- * @v:		new brightness value
+ * @field:	field to write value into
+ * @v:		new value
  *
- * Sets the brightness for a given controller.
+ * Sets a value for a given controller and field.
  *
  * Returns: true if write was successful, otherwise false
  **/
-bool light_setBrightness(char const *controller, unsigned long v)
+bool light_set(char const *controller, LIGHT_FIELD field, unsigned long v)
 {
 	char *path;
 	bool r;
 
-	if (!(path = light_path_new(controller, light_conf.field))) {
-		LIGHT_ERR("could not generate path to brightness file");
+	if (!(path = light_path_new(controller, light_conf.field)))
 		return false;
-	}
 
-	LIGHT_NOTE("setting brightness %lu (raw) to controller", v);
+	LIGHT_NOTE("writing value %lu (raw) to '%s'", v, path);
+
 	r = light_write_val(path, v);
+	free(path);
 
 	if (!r) {
-		LIGHT_ERR("could not write value to brightness file");
+		LIGHT_ERR("error writing value to file");
 	}
 
-	free(path);
 	return r;
 }
 
@@ -353,7 +322,7 @@ bool light_ctrl_check(char const *controller)
 			return false;
 		}
 		if (!light_test_r(path)) {
-			LIGHT_WARN ("controller not accessible: max_brightness not readable");
+			LIGHT_WARN("controller not accessible: max_brightness not readable");
 			free(path);
 			return false;
 		}
@@ -367,11 +336,11 @@ bool light_ctrl_check(char const *controller)
 	    light_conf.op_mode != LIGHT_SAVE &&
 	    light_conf.field != LIGHT_MIN_CAP &&
 	    !light_test_w(path)) {
-		LIGHT_WARN ("controller not accessible: brightness not writeable");
+		LIGHT_WARN("controller not accessible: brightness not writeable");
 		free(path);
 		return false;
 	} else if (!light_test_r(path)) {
-		LIGHT_WARN ("controller not accessible: brightness not readable");
+		LIGHT_WARN("controller not accessible: brightness not readable");
 		free(path);
 		return false;
 	}
@@ -400,7 +369,7 @@ DIR *light_ctrl_iter_new()
 		dir = opendir("/sys/class/backlight");
 
 	if (!dir)
-		LIGHT_ERR ("could not open directory in /sys");
+		LIGHT_ERR("could not open directory in /sys");
 
 	return dir;
 }
@@ -473,17 +442,12 @@ char *light_ctrl_auto()
 				if (best)
 					free(best);
 				best = next;
-				LIGHT_NOTE
-				    ("using controller '%s', it is an improvement",
-				     best);
+				LIGHT_NOTE("using controller '%s', it is an improvement", best);
 				continue;
 			}
-			LIGHT_NOTE
-			    ("ignoring controller '%s', it is not an improvement",
-			     next);
+			LIGHT_NOTE("ignoring controller '%s', not an improvement", next);
 		} else {
-			LIGHT_WARN("ignoring controller '%s', not accessible",
-				   next);
+			LIGHT_WARN("ignoring controller '%s', cannot access", next);
 		}
 
 		free(next);
@@ -506,86 +470,22 @@ char *light_ctrl_auto()
  **/
 bool light_fetch_mincap(char const *controller, unsigned long *mincap)
 {
-	errno = 0;
-	if (light_fetch(controller, LIGHT_MIN_CAP, mincap)) {
+	if (light_fetch(controller, LIGHT_MIN_CAP, mincap))
 		return true;
-	} else if (errno == EACCES) {
-		LIGHT_NOTE("can't access mincap file, assuming no min");
-		*mincap = 0;
-		return true;
-	} else {
-		LIGHT_ERR("error reading from mincap file");
-		return false;
-	}
-}
-
-/**
- * light_setMinCap:
- * @controller: name of controller device
- * @v:          new minimum cap value
- *
- * Sets the minimum cap for a given controller.
- *
- * Returns: true if write was successful, otherwise false
- **/
-bool light_setMinCap(char const *controller, unsigned long v)
-{
-	char *path;
-
-	if (!(path = light_path_new(controller, LIGHT_MIN_CAP))) {
-		LIGHT_ERR("could not generate path to minimum cap file");
-		return false;
-	}
-
-	LIGHT_NOTE("setting minimum cap to %lu (raw)", v);
-	if (!light_write_val(path, v)) {
-		LIGHT_ERR("could not write to minimum cap file");
-		free(path);
-		return false;
-	}
-
-	free(path);
+	LIGHT_NOTE("can't access mincap file, assuming no min");
+	*mincap = 0;
 	return true;
 }
 
 /**
- * light_saveBrightness:
- * @controller: name of controller device
- * @v:          brightness value to save
- *
- * Saves the brightness value for a given controller.
- *
- * Returns: true if write was successful, otherwise false
- **/
-bool light_saveBrightness(char const *controller, unsigned long v)
-{
-	char *path;
-
-	if (!(path = light_path_new(controller, LIGHT_SAVERESTORE))) {
-		LIGHT_ERR("could not generate path to save/restore file");
-		return false;
-	}
-
-	LIGHT_NOTE("saving brightness %lu (raw) to save file", v);
-	if (!light_write_val(path, v)) {
-		LIGHT_ERR("could not write to save/restore file");
-		free(path);
-		return false;
-	}
-
-	free(path);
-	return true;
-}
-
-/**
- * light_restoreBrightness:
+ * light_restore:
  * @controller: name of controller device
  *
  * Restores the brightness value for a given controller.
  *
  * Returns: true if write was successful, otherwise false
  **/
-bool light_restoreBrightness(char const *controller)
+bool light_restore(char const *controller)
 {
 	unsigned long v = 0;
 
@@ -596,7 +496,7 @@ bool light_restoreBrightness(char const *controller)
 		return false;
 	}
 
-	if (!light_setBrightness(controller, v)) {
+	if (!light_set(controller, LIGHT_BRIGHTNESS, v)) {
 		LIGHT_ERR("could not set restored brightness");
 		return false;
 	}

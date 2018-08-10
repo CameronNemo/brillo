@@ -85,7 +85,7 @@ bool light_check_ops()
  **/
 bool light_parse_args(int argc, char **argv)
 {
-	int currFlag;
+	int opt;
 	int verbosity;
 
 	bool opSet = false;
@@ -96,8 +96,8 @@ bool light_parse_args(int argc, char **argv)
 
 	light_defaults();
 
-	while ((currFlag = getopt(argc, argv, "HhVGSAULIObmclkas:prv:")) != -1) {
-		switch (currFlag) {
+	while ((opt = getopt(argc, argv, "HhVGSAULIObmclkas:prv:")) != -1) {
+		switch (opt) {
 			/* -- Operations -- */
 		case 'H':
 		case 'h':
@@ -214,6 +214,9 @@ bool light_parse_args(int argc, char **argv)
 			}
 			light_loglevel = (light_loglevel_t) verbosity;
 			break;
+		default:
+			light_print_help();
+			return false;
 		}
 	}
 
@@ -227,27 +230,21 @@ bool light_parse_args(int argc, char **argv)
 	    light_conf.op_mode == LIGHT_ADD ||
 	    light_conf.op_mode == LIGHT_SUB) {
 		if (argc - optind != 1) {
-			fprintf(stderr,
-				"Light needs an argument for <value>.\n\n");
+			LIGHT_ERR("need an argument for <value>");
 			light_print_help();
 			return false;
 		}
 
 		if (light_conf.val_mode == LIGHT_PERCENT) {
-			if (sscanf(argv[optind], "%lf", &light_conf.val_pct) !=
-			    1) {
-				fprintf(stderr,
-					"<value> is not specified in a recognizable format.\n\n");
+			if (sscanf(argv[optind], "%lf", &light_conf.val_pct) != 1) {
+				LIGHT_ERR("<value> not specified in a recognizable format");
 				light_print_help();
 				return false;
 			}
-			light_conf.val_pct =
-			    light_clampPercent(light_conf.val_pct);
+			light_conf.val_pct = light_clamp_pct(light_conf.val_pct);
 		} else {
-			if (sscanf(argv[optind], "%lu", &light_conf.val_raw) !=
-			    1) {
-				fprintf(stderr,
-					"<value> is not specified in a recognizable format.\n\n");
+			if (sscanf(argv[optind], "%lu", &light_conf.val_raw) != 1) {
+				LIGHT_ERR("<value> not specified in a recognizable format");
 				light_print_help();
 				return false;
 			}

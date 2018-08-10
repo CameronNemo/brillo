@@ -3,6 +3,8 @@
 
 #include "helpers.h"
 
+#include <stdlib.h>
+#include <stdio.h>
 #include <sys/types.h>
 #include <dirent.h>
 #include <linux/limits.h>
@@ -20,9 +22,9 @@
   if(v)\
   {\
     fprintf(stderr, t" arguments can not be used in conjunction.\n");\
-    return FALSE;\
+    return false;\
   }\
-  v = TRUE;
+  v = true;
 
 #define ASSERT_OPSET() ASSERT_SET("Operation", opSet)
 #define ASSERT_TARGETSET() ASSERT_SET("Target", targetSet)
@@ -31,88 +33,78 @@
 #define ASSERT_VALSET() ASSERT_SET("Value", valSet)
 
 typedef enum LIGHT_FIELD {
-  LIGHT_BRIGHTNESS = 0,
-  LIGHT_MAX_BRIGHTNESS,
-  LIGHT_MIN_CAP,
-  LIGHT_SAVERESTORE
+	LIGHT_BRIGHTNESS = 0,
+	LIGHT_MAX_BRIGHTNESS,
+	LIGHT_MIN_CAP,
+	LIGHT_SAVERESTORE
 } LIGHT_FIELD;
 
 typedef enum LIGHT_TARGET {
-  LIGHT_BACKLIGHT = 0,
-  LIGHT_KEYBOARD
+	LIGHT_BACKLIGHT = 0,
+	LIGHT_KEYBOARD
 } LIGHT_TARGET;
 
 typedef enum LIGHT_CTRL_MODE {
-  LIGHT_AUTO = 0,
-  LIGHT_SPECIFY
+	LIGHT_AUTO = 0,
+	LIGHT_SPECIFY
 } LIGHT_CTRL_MODE;
 
 typedef enum LIGHT_OP_MODE {
-  LIGHT_GET = 0,
-  LIGHT_SET,
-  LIGHT_ADD,
-  LIGHT_SUB,
-  LIGHT_PRINT_HELP,   /* Prints help and exits  */
-  LIGHT_PRINT_VERSION, /* Prints version info and exits */
-  LIGHT_LIST_CTRL,
-  LIGHT_RESTORE,
-  LIGHT_SAVE
-
+	LIGHT_GET = 0,
+	LIGHT_SET,
+	LIGHT_ADD,
+	LIGHT_SUB,
+	LIGHT_PRINT_HELP,	/* Prints help and exits  */
+	LIGHT_PRINT_VERSION,	/* Prints version info and exits */
+	LIGHT_LIST_CTRL,
+	LIGHT_RESTORE,
+	LIGHT_SAVE
 } LIGHT_OP_MODE;
 
 typedef enum LIGHT_VAL_MODE {
-  LIGHT_RAW = 0,
-  LIGHT_PERCENT
+	LIGHT_RAW = 0,
+	LIGHT_PERCENT
 } LIGHT_VAL_MODE;
 
-typedef struct light_runtimeArguments_s {
-  /* Which controller to use */
-  LIGHT_CTRL_MODE controllerMode;
-  char           *specifiedController;
-
-  /* What to do with the controller */
-  LIGHT_OP_MODE   operationMode;
-  LIGHT_VAL_MODE  valueMode;
-  unsigned long   specifiedValueRaw; /* The specified value in raw mode */
-  double          specifiedValuePercent; /* The specified value in percent */
-
-  LIGHT_TARGET   target;
-  LIGHT_FIELD    field;
-
-  /* Cache data */
-  unsigned long   cachedMaxBrightness;
-
-} light_runtimeArguments, *light_runtimeArguments_p;
+typedef struct {
+	LIGHT_CTRL_MODE ctrl_mode;
+	char *ctrl;
+	LIGHT_OP_MODE op_mode;
+	LIGHT_VAL_MODE val_mode;
+	unsigned long val_raw;
+	double val_pct;
+	LIGHT_TARGET target;
+	LIGHT_FIELD field;
+	unsigned long cached_max;
+} light_conf_t;
 
 /* Global variable holding the settings for the current run */
-light_runtimeArguments light_Configuration;
+light_conf_t light_conf;
 
 /* Initialization */
 
-void light_defaultConfig();
-LIGHT_BOOL light_parseArguments(int argc, char** argv);
-void light_printVersion(void);
-void light_printHelp(void);
-LIGHT_BOOL light_listControllers(void);
-LIGHT_BOOL light_handleInfo(void);
-LIGHT_BOOL light_initialize(void);
+void light_defaults();
+bool light_parse_args(int argc, char **argv);
+void light_print_version(void);
+void light_print_help(void);
+bool light_list(void);
+bool light_info(void);
+bool light_initialize(void);
 void light_free(void);
 
 /* Execution */
 
-LIGHT_BOOL light_execute(void);
-char      *light_genPath(const char *controller, LIGHT_FIELD type);
-LIGHT_BOOL light_getBrightness(char const *controller, unsigned long *v);
-LIGHT_BOOL light_getMaxBrightness(char const *controller, unsigned long *v);
-LIGHT_BOOL light_setBrightness(char const *controller, unsigned long v);
-LIGHT_BOOL light_controllerAccessible(char const *controller);
-/* WARNING: `controller` HAS to be at most NAME_MAX, otherwise fails */
-LIGHT_BOOL light_getMinCap(char const *controller, LIGHT_BOOL *hasMinCap, unsigned long *minCap);
-LIGHT_BOOL light_setMinCap(char const *controller, unsigned long v);
-LIGHT_BOOL light_saveBrightness(char const *controller, unsigned long v);
-LIGHT_BOOL light_restoreBrightness(char const *controller);
-DIR  *light_genCtrlIterator();
-char *light_nextCtrl(DIR* dir);
-char *light_getBestCtrl();
+bool light_execute(void);
+char *light_path_new(const char *controller, LIGHT_FIELD type);
+bool light_fetch(char const *controller, LIGHT_FIELD field, unsigned long *v);
+bool light_setBrightness(char const *controller, unsigned long v);
+bool light_ctrl_check(char const *controller);
+bool light_fetch_mincap(char const *controller, unsigned long *mincap);
+bool light_setMinCap(char const *controller, unsigned long v);
+bool light_saveBrightness(char const *controller, unsigned long v);
+bool light_restoreBrightness(char const *controller);
+DIR *light_ctrl_iter_new();
+char *light_ctrl_iter_next(DIR * dir);
+char *light_ctrl_auto();
 
-#endif /* LIGHT_H */
+#endif				/* LIGHT_H */

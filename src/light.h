@@ -68,6 +68,8 @@ typedef enum LIGHT_VAL_MODE {
 
 typedef struct {
 	LIGHT_CTRL_MODE ctrl_mode;
+	char *sys_prefix;
+	char *cache_prefix;
 	char *ctrl;
 	LIGHT_OP_MODE op_mode;
 	LIGHT_VAL_MODE val_mode;

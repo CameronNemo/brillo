@@ -5,6 +5,7 @@
 #include <string.h>
 #include <getopt.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #include <errno.h>
 
 /**
@@ -321,18 +322,135 @@ void light_print_help()
 }
 
 /**
+ * light_init_sys:
+ *
+ * Initializes the sys prefix string.
+ *
+ * Returns: pointer to allocated prefix, or NULL on failure
+ **/
+char *light_init_sys(const char *tgt)
+{
+	char *s;
+	int r;
+
+	if (!(s = malloc(PATH_MAX))) {
+		LIGHT_MEMERR();
+		return NULL;
+	}
+
+	r = snprintf(s, PATH_MAX, "/sys/class/%s", tgt);
+
+	if (r < 0 || r > PATH_MAX) {
+		LIGHT_ERR("snprintf");
+		free(s);
+		return NULL;
+	}
+
+	return s;
+}
+
+/**
+ * light_init_cache:
+ *
+ * Initializes the cache prefix string,
+ * attempts to create the directory.
+ *
+ * Returns: pointer to allocated prefix, or NULL on failure
+ **/
+char *light_init_cache(const char *tgt)
+{
+	char *s;
+	const char *env, *dirfmt;
+	int r;
+
+	if (!(s = malloc(PATH_MAX))) {
+		LIGHT_MEMERR();
+		return NULL;
+	}
+
+	if ((geteuid() == 0 && (env = "/var/cache")) || 
+	    (env = getenv("XDG_CACHE_HOME")))
+		dirfmt = "%s/" LIGHT_PROG;
+	else if ((env = getenv("HOME")))
+		dirfmt = "%s/.cache/" LIGHT_PROG;
+
+	if (!env) {
+		LIGHT_ERR("XDG/HOME env vars not set, failed to init cache");
+		free(s);
+		return NULL;
+	}
+
+	r = snprintf(s, PATH_MAX, dirfmt, env);
+
+	if (r < 0 || r > PATH_MAX) {
+		LIGHT_ERR("snprintf");
+		free(s);
+		return NULL;
+	}
+
+	r = mkdir(s, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+
+	/* warn now, the exec will fail later if necessary */
+	if (r != 0 && errno != EEXIST)
+		LIGHT_WARN("mkdir: %s", strerror(errno));
+
+	r = snprintf(s + strlen(s), PATH_MAX - strlen(s), "/%s", tgt);
+
+	if (r < 0 || r > PATH_MAX) {
+		LIGHT_ERR("snprintf");
+		free(s);
+		return NULL;
+	}
+
+	return s;
+}
+
+/**
+ * light_init_prefix:
+ *
+ * Populates sys and cache prefixes.
+ *
+ * Returns: true on success, false on failure
+ **/
+bool light_init_prefix()
+{
+	const char *tgt;
+
+	if (light_conf.target == LIGHT_BACKLIGHT)
+		tgt = "backlight";
+	else if (light_conf.target == LIGHT_KEYBOARD)
+		tgt = "leds";
+	else
+		return false;
+
+	if (!(light_conf.sys_prefix = light_init_sys(tgt))) {
+		return false;
+	} else if (!(light_conf.cache_prefix = light_init_cache(tgt))) {
+		free(light_conf.sys_prefix);
+		LIGHT_ERR("failed to init cache prefix");
+		return false;
+	}
+
+	return true;
+}
+
+
+/**
  * light_initialize:
  *
  * Initializes the configuration for the operation being requested.
  * Ensures that a valid controller exists.
  *
- * WARNING: may allocate a string in light_conf.ctrl,
- *          but will not free it
+ * WARNING: may allocate strings in light_conf struct,
+ *          call light_free() to free them
  *
  * Returns: true on success, false on failure
  **/
 bool light_initialize()
 {
+	if (!light_init_prefix())
+		return false;
+
 	/* Make sure we have a valid controller before we proceed */
 	if ((light_conf.ctrl_mode == LIGHT_AUTO &&
 	     !(light_conf.ctrl = light_ctrl_auto())) ||
@@ -399,11 +517,21 @@ bool light_list()
 /**
  * light_free:
  *
- * Free the controller pointer.
+ * Free the string pointers in the light_conf struct.
  **/
 void light_free()
 {
-	char *c = light_conf.ctrl;
+	char *c;
+
+	c = light_conf.ctrl;
+	if (c)
+		free(c);
+
+	c = light_conf.sys_prefix;
+	if (c)
+		free(c);
+
+	c = light_conf.cache_prefix;
 	if (c)
 		free(c);
 }

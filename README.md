@@ -11,6 +11,8 @@ brillo - Backlight and Keyboard LED control tool
   - [Controller](#controller)
 - [Installation](#installation)
 - [Unpriveleged Access](#unpriveleged-access)
+  - [polkit](#polkit)
+  - [udev](#udev)
 - [Copyright](#copyright)
 
 
@@ -25,11 +27,10 @@ Notable features include:
 * Ability to save and restore brightness across boots
 * Directly using `sysfs` to set brightness without relying on X
 * Unpriveleged access with no new setuid binaries
+* Containment with AppArmor
 
-Let's get started with a few examples, for details, see below for the
-full description of the different commands, options and how to access
-different controllers.
-
+Let's get started with a few examples; see below for the
+full description of available commands and options.
 
 Examples
 --------
@@ -142,35 +143,37 @@ The `-L` and `-Lk` commands list available controllers for the backlight and key
 Installation
 ------------
 
-Typical build and installation process:
+To build the binary and install it:
 
-    make dist
-    # PREFIX is /usr by default
+    make
     sudo make install
 
-To simply compile the binary without installing, run `make`. Note that unpriveleged access may not be available.
+To generate and install the man page, polkit action, udev rule, and apparmor profile:
+
+    make dist
+    sudo make install-dist
 
 Unpriveleged Access
 -------------------
 
 ### polkit
 
-Any active usercan invoke `brillo` through the `pkexec` command to escalate priveleges to root. This will only work from an active session created by (e)logind or ConsoleKit.
+Active sessions can invoke `brillo` via `pkexec` to escalate priveleges.
 
 Examples:
 
     pkexec brillo -O
     pkexec brillo -A 5
 
+> Note: this requires polkitd and (e)logind or ConsoleKit.
+
 ### udev
 
-`brillo` uses a udev rule to grant necessary permissions to the `video` group. Any user in this group can modify the brightness directly without the use of `pkexec`.
+`brillo`'s udev rule grants necessary permissions to the `video` group.
 
->Note: two features, storing brightness and setting mincap values, will only work with one user at a time in this mode.
+Any user in this group can modify the brightness directly.
 
-### lightscript
-
-`brillo` is a fork of the popular [light](https://github.com/haikarainen/light) program. A compatibility script is provided that is a drop-in replacement for `light`. To install it, run `sudo make install-lightscript`. This is a wrapper around the polkit access method.
+> Note: in this mode, stored brightness and minimum cap files will be in the user's cache home (typically "~/.cache").
 
 Copyright
 -------------------

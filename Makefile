@@ -35,7 +35,7 @@ polkit:
 
 dist: man polkit lightscript
 
-install-dist:
+install-dist: install
 	install -dZ -m 755 $(MANDIR) $(PKEDIR) $(UDEVDIR) $(AADIR)
 	install -DZ -m 644 $(PROG).1 -t $(MANDIR)
 	install -DZ -m 644 contrib/$(VENDOR).$(PROG).policy -t $(PKEDIR)

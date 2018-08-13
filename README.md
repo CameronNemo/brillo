@@ -143,15 +143,17 @@ The `-L` and `-Lk` commands list available controllers for the backlight and key
 Installation
 ------------
 
-To build the binary and install it:
+To build the binary `brillo` and install it:
 
     make
     sudo make install
 
-To generate and install the man page, polkit action, udev rule, and apparmor profile:
+A full install, generating the man page, polkit action, udev rule, and apparmor profile in addition to the binary:
 
     make dist
     sudo make install-dist
+
+> Note: the Makefile uses `PREFIX` and `DESTDIR` variables to build the installation path. If specified, they should be consistent between each command.
 
 Unpriveleged Access
 -------------------

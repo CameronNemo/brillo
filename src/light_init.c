@@ -280,11 +280,7 @@ void light_print_version()
  **/
 void light_print_help()
 {
-	printf("Usage: %s <options> <value>\n", LIGHT_PROG);
-	printf
-	    ("<value> has to be either integral(raw mode) or decimal(percent mode) depending on the specified value mode.\n");
-	printf("<options> can be any of the following:\n\n");
-
+	printf("Usage: %s [operation] [value] [-k] [-r] [-m|-c] [-s controller] [-v loglevel]\n", LIGHT_PROG);
 	printf("Operations (can not be used in conjunction):\n");
 	printf("  -H -h:\tPrints this help and exits\n");
 	printf("  -V:\t\tPrints version info and exits\n");

@@ -37,11 +37,7 @@ Examples
 
 Get the current brightness in percent
 
-    brillo -G
-
-or
-
-    brillo
+    brillo [-G]
 
 Increase brightness by 5 percent
 
@@ -51,10 +47,7 @@ Set the minimum cap to 2 in raw value on the `acpi_video0` controller:
 
     brillo -cr -s acpi_video0 -S 2
 
-Try to set the brightness to 0 after that, it will be changed to the
-minimum 2:
-
-    brillo -r -s acpi_video0 -S 0
+> Note: trying to set the controller's brightness to less than 2 will then be adjusted to this minimum.
 
 Find keyboard controllers:
 
@@ -65,10 +58,7 @@ between different systems:
 
     brillo -k -s "input15::scrolllock" -S 100
 
-Usually, LEDs only take 0 or 1 in raw value (i.e. for off/on), so you
-can instead write:
-
-    brillo -kr -s "input15::scrolllock" -S 1
+> Note: LEDs often only take 0 or 1 in raw value (i.e. for off/on). In these cases, you can use 1 instead of 100.
 
 Verify by reading back the max brightness, you should get a value of 1:
 
@@ -77,6 +67,10 @@ Verify by reading back the max brightness, you should get a value of 1:
 
 Usage
 -----
+
+Brillo provides a rich set of options:
+
+`brillo [operation] [value] [-k] [-r] [-m|-c] [-s controller] [-v loglevel]`
 
 ### Operation mode
 

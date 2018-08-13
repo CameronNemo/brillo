@@ -8,13 +8,16 @@
 profile @{BRILLO} @{BRILLO_EXEC} {
   #include <abstractions/base>
 
+  capability dac_override,
+  capability dac_read_search,
+
   @{BRILLO_EXEC}          mixr,
   /var/cache/@{BRILLO}    rw,
   /var/cache/@{BRILLO}/** rw,
 
   # unpriveleged mode
-  owner @{HOME}/.config/@{BRILLO}    rw,
-  owner @{HOME}/.config/@{BRILLO}/** rw,
+  owner @{HOME}/.cache/@{BRILLO}    rw,
+  owner @{HOME}/.cache/@{BRILLO}/** rw,
 
   /sys/class/{backlight,leds}/   r,
   /sys/devices/**/brightness     rw,

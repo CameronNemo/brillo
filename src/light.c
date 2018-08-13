@@ -1,7 +1,7 @@
 #include "light.h"
 
 #include <string.h>
-#include <errno.h>
+#include <unistd.h>
 
 /**
  * light_exec_init:
@@ -192,7 +192,8 @@ bool light_execute()
  **/
 char *light_path_new(const char *controller, LIGHT_FIELD type)
 {
-	char *path_new, *path_fmt, *path_prefix, *subsystem;
+	char *path_new;
+	const char *path_fmt, *path_prefix;
 	int r;
 
 	if (!controller || NAME_MAX < strnlen(controller, NAME_MAX + 1)) {
@@ -202,30 +203,24 @@ char *light_path_new(const char *controller, LIGHT_FIELD type)
 	}
 
 	if (type == LIGHT_BRIGHTNESS || type == LIGHT_MAX_BRIGHTNESS)
-		path_prefix = "/sys/class";
+		path_prefix = light_conf.sys_prefix;
 	else if (type == LIGHT_MIN_CAP || type == LIGHT_SAVERESTORE)
-		// TODO: per-user storage dir
-		path_prefix = "/var/cache/" LIGHT_PROG;
+		path_prefix = light_conf.cache_prefix;
 	else
 		return NULL;
 
-	if (light_conf.target == LIGHT_BACKLIGHT)
-		subsystem = "backlight";
-	else
-		subsystem = "leds";
-
 	switch (type) {
 	case LIGHT_BRIGHTNESS:
-		path_fmt = "%s/%s/%s/brightness";
+		path_fmt = "%s/%s/brightness";
 		break;
 	case LIGHT_MAX_BRIGHTNESS:
-		path_fmt = "%s/%s/%s/max_brightness";
+		path_fmt = "%s/%s/max_brightness";
 		break;
 	case LIGHT_MIN_CAP:
-		path_fmt = "%s/%s.%s.mincap";
+		path_fmt = "%s.%s.mincap";
 		break;
 	case LIGHT_SAVERESTORE:
-		path_fmt = "%s/%s.%s.brightness";
+		path_fmt = "%s.%s.brightness";
 		break;
 	default:
 		return NULL;
@@ -236,13 +231,11 @@ char *light_path_new(const char *controller, LIGHT_FIELD type)
 		return NULL;
 	}
 
-	r = snprintf(path_new, PATH_MAX, path_fmt, path_prefix, subsystem,
-		     controller);
+	r = snprintf(path_new, PATH_MAX, path_fmt, path_prefix, controller);
 
-	if (r < 0 || r >= PATH_MAX || path_new == NULL) {
+	if (r < 0 || r >= PATH_MAX) {
 		LIGHT_ERR("failed to copy generated path into buffer");
-		if (path_new)
-			free(path_new);
+		free(path_new);
 		return NULL;
 	}
 
@@ -289,7 +282,7 @@ bool light_set(char const *controller, LIGHT_FIELD field, unsigned long v)
 	char *path;
 	bool r;
 
-	if (!(path = light_path_new(controller, light_conf.field)))
+	if (!(path = light_path_new(controller, field)))
 		return false;
 
 	LIGHT_NOTE("writing value %lu (raw) to '%s'", v, path);

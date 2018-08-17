@@ -90,7 +90,7 @@ bool light_parse_args(int argc, char **argv);
 void light_print_version(void);
 void light_print_help(void);
 bool light_list(void);
-bool light_info(void);
+bool light_info(bool exec);
 bool light_initialize(void);
 void light_free(void);
 
@@ -103,8 +103,11 @@ bool light_set(char const *controller, LIGHT_FIELD field, unsigned long v);
 bool light_ctrl_check(char const *controller);
 bool light_fetch_mincap(char const *controller, unsigned long *mincap);
 bool light_restore(char const *controller);
-DIR *light_ctrl_iter_new();
 char *light_ctrl_iter_next(DIR * dir);
 char *light_ctrl_auto();
+
+/* Misc */
+char *path_append(char * const str, const char *fmt, ...);
+char *path_new(void);
 
 #endif				/* LIGHT_H */

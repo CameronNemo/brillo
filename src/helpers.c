@@ -52,32 +52,6 @@ bool light_read_val(char const *filename, unsigned long *i)
 	return true;
 }
 
-bool light_test_w(char const *filename)
-{
-	FILE *fileHandle = fopen(filename, "r+");
-
-	if (!fileHandle) {
-		LIGHT_PERMWARN("writing");
-		return false;
-	}
-
-	fclose(fileHandle);
-	return true;
-}
-
-bool light_test_r(char const *filename)
-{
-	FILE *fileHandle = fopen(filename, "r");
-
-	if (!fileHandle) {
-		LIGHT_PERMWARN("reading");
-		return false;
-	}
-
-	fclose(fileHandle);
-	return true;
-}
-
 unsigned long light_log_clamp_min(unsigned long x)
 {
 	LIGHT_NOTE

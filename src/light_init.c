@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <errno.h>
+#include <stdarg.h>
 
 /**
  * light_defaults:
@@ -318,6 +319,56 @@ void light_print_help()
 }
 
 /**
+ * path_new:
+ *
+ * Returns: pointer to initialized path string, or NULL on failure
+ **/
+char *path_new()
+{
+	char *p;
+
+	if (!(p = malloc(PATH_MAX))) {
+		LIGHT_MEMERR();
+		return NULL;
+	}
+
+	*p = '\0';
+
+	return p;
+}
+
+/**
+ * path_append:
+ * @str:	string to append to
+ * @fmt:	format string to append
+ * @args:	variadic arguments to pass to printf
+ *
+ * Appends the format and arguments to the
+ * supplied string, freeing str on error.
+ *
+ * Returns: str, or NULL on error
+ **/
+char *path_append(char * const str, const char *fmt, ...)
+{
+	int r;
+	va_list ap;
+
+	va_start(ap, fmt);
+
+	r = vsnprintf(str + strlen(str), PATH_MAX - strlen(str), fmt, ap);
+
+	if (r < 0 || r > PATH_MAX) {
+		LIGHT_ERR("snprintf");
+		free(str);
+		va_end(ap);
+		return NULL;
+	}
+
+	va_end(ap);
+	return str;
+}
+
+/**
  * light_init_sys:
  *
  * Initializes the sys prefix string.
@@ -327,22 +378,11 @@ void light_print_help()
 char *light_init_sys(const char *tgt)
 {
 	char *s;
-	int r;
 
-	if (!(s = malloc(PATH_MAX))) {
-		LIGHT_MEMERR();
+	if (!(s = path_new()))
 		return NULL;
-	}
 
-	r = snprintf(s, PATH_MAX, "/sys/class/%s", tgt);
-
-	if (r < 0 || r > PATH_MAX) {
-		LIGHT_ERR("snprintf");
-		free(s);
-		return NULL;
-	}
-
-	return s;
+	return path_append(s, "/sys/class/%s", tgt);
 }
 
 /**
@@ -353,16 +393,11 @@ char *light_init_sys(const char *tgt)
  *
  * Returns: pointer to allocated prefix, or NULL on failure
  **/
-char *light_init_cache(const char *tgt)
+char *light_init_cache(const char * const tgt)
 {
 	char *s;
 	const char *env, *dirfmt;
 	int r;
-
-	if (!(s = malloc(PATH_MAX))) {
-		LIGHT_MEMERR();
-		return NULL;
-	}
 
 	if ((geteuid() == 0 && (env = "/var/cache")) || 
 	    (env = getenv("XDG_CACHE_HOME")))
@@ -372,43 +407,36 @@ char *light_init_cache(const char *tgt)
 
 	if (!env) {
 		LIGHT_ERR("XDG/HOME env vars not set, failed to init cache");
-		free(s);
 		return NULL;
 	}
 
-	r = snprintf(s, PATH_MAX, dirfmt, env);
-
-	if (r < 0 || r > PATH_MAX) {
-		LIGHT_ERR("snprintf");
-		free(s);
+	if (!(s = path_new()))
 		return NULL;
-	}
 
+	if (!(s = path_append(s, dirfmt, env)))
+		return NULL;
+
+	/* make the cache dir */
 	r = mkdir(s, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
 
 	/* warn now, the exec will fail later if necessary */
 	if (r != 0 && errno != EEXIST)
 		LIGHT_WARN("mkdir: %s", strerror(errno));
 
-	r = snprintf(s + strlen(s), PATH_MAX - strlen(s), "/%s", tgt);
-
-	if (r < 0 || r > PATH_MAX) {
-		LIGHT_ERR("snprintf");
-		free(s);
-		return NULL;
-	}
-
-	return s;
+	return path_append(s, "/%s", tgt);
 }
 
 /**
- * light_init_prefix:
+ * light_initialize:
  *
- * Populates sys and cache prefixes.
+ * Initializes sys/cache prefixes and controller string.
+ *
+ * WARNING: may allocate strings in light_conf struct,
+ *          call light_free() to free them
  *
  * Returns: true on success, false on failure
  **/
-bool light_init_prefix()
+bool light_initialize()
 {
 	const char *tgt;
 
@@ -419,32 +447,14 @@ bool light_init_prefix()
 	else
 		return false;
 
-	if (!(light_conf.sys_prefix = light_init_sys(tgt))) {
+	if (!(light_conf.sys_prefix = light_init_sys(tgt)))
 		return false;
-	} else if (!(light_conf.cache_prefix = light_init_cache(tgt))) {
-		free(light_conf.sys_prefix);
-		LIGHT_ERR("failed to init cache prefix");
-		return false;
-	}
 
-	return true;
-}
+	/* info mode needs no more initialization */
+	if (light_info(false))
+		return true;
 
-
-/**
- * light_initialize:
- *
- * Initializes the configuration for the operation being requested.
- * Ensures that a valid controller exists.
- *
- * WARNING: may allocate strings in light_conf struct,
- *          call light_free() to free them
- *
- * Returns: true on success, false on failure
- **/
-bool light_initialize()
-{
-	if (!light_init_prefix())
+	if (!(light_conf.cache_prefix = light_init_cache(tgt)))
 		return false;
 
 	/* Make sure we have a valid controller before we proceed */
@@ -458,30 +468,33 @@ bool light_initialize()
 
 /**
  * light_info:
+ * @exec:	whether or not to take action
  *
- * Print help and version info or list controllers,
- * according to the op_mode.
+ * If exec is true, prints information
+ * according to the operation mode.
  *
- * Returns: true if info was shown, otherwise false
+ * Returns: true if op_mode is an info mode, otherwise false
  **/
-bool light_info()
+bool light_info(bool exec)
 {
-	if (light_conf.op_mode == LIGHT_PRINT_HELP) {
-		light_print_help();
-		return true;
+	switch (light_conf.op_mode) {
+		case LIGHT_PRINT_HELP:
+			if (exec)
+				light_print_help();
+			break;
+		case LIGHT_PRINT_VERSION:
+			if (exec)
+				light_print_version();
+			break;
+		case LIGHT_LIST_CTRL:
+			if (exec)
+				light_list();
+			break;
+		default:
+			return false;
 	}
 
-	if (light_conf.op_mode == LIGHT_PRINT_VERSION) {
-		light_print_version();
-		return true;
-	}
-
-	if (light_conf.op_mode == LIGHT_LIST_CTRL) {
-		/* listControllers() can return false, but only if it does not find any controllers. That is not enough for an unsuccessfull run. */
-		light_list();
-		return true;
-	}
-	return false;
+	return true;
 }
 
 /**
@@ -495,18 +508,18 @@ bool light_info()
 bool light_list()
 {
 	DIR *dir;
-	char *controller;
 
-	if ((dir = light_ctrl_iter_new()) == NULL)
+	dir = opendir(light_conf.sys_prefix);
+
+	if (!dir) {
+		LIGHT_ERR("opendir: %s", strerror(errno));
 		return false;
-
-	while ((controller = light_ctrl_iter_next(dir)) != NULL) {
-		printf("%s\n", controller);
-		free(controller);
 	}
 
-	closedir(dir);
+	for (char *c; (c = light_ctrl_iter_next(dir)); free(c))
+		printf("%s\n", c);
 
+	closedir(dir);
 	return true;
 }
 

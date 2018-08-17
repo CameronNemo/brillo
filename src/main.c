@@ -9,11 +9,8 @@ int main(int argc, char **argv)
 		return LIGHT_RETURNVAL_INITFAIL;
 	}
 
-	if (light_info()) {
-		return EXIT_SUCCESS;
-	}
-
 	if (!light_initialize()) {
+		light_free();
 		LIGHT_ERR("Initialization failed");
 		return LIGHT_RETURNVAL_INITFAIL;
 	}

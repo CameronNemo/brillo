@@ -41,8 +41,6 @@ light_loglevel_t light_loglevel;
 
 bool light_write_val(char const *filename, unsigned long v);
 bool light_read_val(char const *filename, unsigned long *v);
-bool light_test_w(char const *filename);
-bool light_test_r(char const *filename);
 
 /* Clamps the `percent` value between 0% and 100% */
 double light_clamp_pct(double percent);

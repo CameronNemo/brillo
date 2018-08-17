@@ -2,6 +2,7 @@
 
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 
 /**
  * light_exec_init:
@@ -147,6 +148,9 @@ bool light_execute()
 	unsigned long max;	/* The max brightness, in raw units */
 	unsigned long mincap;	/* The minimum cap, in raw units */
 
+	if (light_info(false))
+		return light_info(true);
+
 	if (!light_exec_init(&curr, &max, &mincap))
 		return false;
 
@@ -192,54 +196,42 @@ bool light_execute()
  **/
 char *light_path_new(const char *controller, LIGHT_FIELD type)
 {
-	char *path_new;
-	const char *path_fmt, *path_prefix;
-	int r;
+	char *p;
+	const char *fmt, *prefix;
 
 	if (!controller || NAME_MAX < strnlen(controller, NAME_MAX + 1)) {
-		LIGHT_ERR("invalid controller '%s', couldn't generate path",
-			  controller);
+		LIGHT_ERR("invalid controller '%s'", controller);
 		return NULL;
 	}
 
 	if (type == LIGHT_BRIGHTNESS || type == LIGHT_MAX_BRIGHTNESS)
-		path_prefix = light_conf.sys_prefix;
+		prefix = light_conf.sys_prefix;
 	else if (type == LIGHT_MIN_CAP || type == LIGHT_SAVERESTORE)
-		path_prefix = light_conf.cache_prefix;
+		prefix = light_conf.cache_prefix;
 	else
 		return NULL;
 
 	switch (type) {
 	case LIGHT_BRIGHTNESS:
-		path_fmt = "%s/%s/brightness";
+		fmt = "%s/%s/brightness";
 		break;
 	case LIGHT_MAX_BRIGHTNESS:
-		path_fmt = "%s/%s/max_brightness";
+		fmt = "%s/%s/max_brightness";
 		break;
 	case LIGHT_MIN_CAP:
-		path_fmt = "%s.%s.mincap";
+		fmt = "%s.%s.mincap";
 		break;
 	case LIGHT_SAVERESTORE:
-		path_fmt = "%s.%s.brightness";
+		fmt = "%s.%s.brightness";
 		break;
 	default:
 		return NULL;
 	}
 
-	if (!(path_new = malloc(PATH_MAX))) {
-		LIGHT_MEMERR();
+	if (!(p = path_new()))
 		return NULL;
-	}
 
-	r = snprintf(path_new, PATH_MAX, path_fmt, path_prefix, controller);
-
-	if (r < 0 || r >= PATH_MAX) {
-		LIGHT_ERR("failed to copy generated path into buffer");
-		free(path_new);
-		return NULL;
-	}
-
-	return path_new;
+	return path_append(p, fmt, prefix, controller);
 }
 
 /**
@@ -311,14 +303,15 @@ bool light_ctrl_check(char const *controller)
 	   of the controller for later computation */
 	if (light_conf.ctrl_mode == LIGHT_AUTO ||
 	    light_conf.field == LIGHT_MAX_BRIGHTNESS) {
-		if (!(path = light_path_new(controller, LIGHT_MAX_BRIGHTNESS))) {
+		if (!(path = light_path_new(controller, LIGHT_MAX_BRIGHTNESS)))
 			return false;
-		}
-		if (!light_test_r(path)) {
-			LIGHT_WARN("controller not accessible: max_brightness not readable");
+
+		if (access(path, R_OK) != 0) {
+			LIGHT_WARN("access '%s': %s", path, strerror(errno));
 			free(path);
 			return false;
 		}
+
 		free(path);
 	}
 
@@ -328,43 +321,18 @@ bool light_ctrl_check(char const *controller)
 	if (light_conf.op_mode != LIGHT_GET &&
 	    light_conf.op_mode != LIGHT_SAVE &&
 	    light_conf.field != LIGHT_MIN_CAP &&
-	    !light_test_w(path)) {
-		LIGHT_WARN("controller not accessible: brightness not writeable");
+	    (access(path, W_OK) != 0)) {
+		LIGHT_WARN("access '%s': %s", path, strerror(errno));
 		free(path);
 		return false;
-	} else if (!light_test_r(path)) {
-		LIGHT_WARN("controller not accessible: brightness not readable");
+	} else if (access(path, R_OK) != 0) {
+		LIGHT_WARN("access '%s': %s", path, strerror(errno));
 		free(path);
 		return false;
 	}
 
 	free(path);
 	return true;
-}
-
-/**
- * light_ctrl_iter_new:
- *
- * Opens the appropriate directory for a target.
- *
- * WARNING: returns an opened directory, which
- *          should be closed after use
- *
- * Returns: directory, or NULL on failure
- **/
-DIR *light_ctrl_iter_new()
-{
-	DIR *dir;
-
-	if (light_conf.target == LIGHT_KEYBOARD)
-		dir = opendir("/sys/class/leds");
-	else
-		dir = opendir("/sys/class/backlight");
-
-	if (!dir)
-		LIGHT_ERR("could not open directory in /sys");
-
-	return dir;
 }
 
 /**
@@ -422,8 +390,10 @@ char *light_ctrl_auto()
 
 	LIGHT_NOTE("finding best controller...");
 
-	if (!(dir = light_ctrl_iter_new()))
+	if (!(dir = opendir(light_conf.sys_prefix))) {
+		LIGHT_ERR("opendir: %s", strerror(errno));
 		return NULL;
+	}
 
 	while ((next = light_ctrl_iter_next(dir))) {
 		unsigned long max = 0;
@@ -435,12 +405,12 @@ char *light_ctrl_auto()
 				if (best)
 					free(best);
 				best = next;
-				LIGHT_NOTE("using controller '%s', it is an improvement", best);
+				LIGHT_NOTE("found (better) controller '%s'", best);
 				continue;
 			}
-			LIGHT_NOTE("ignoring controller '%s', not an improvement", next);
+			LIGHT_NOTE("found worse controller '%s'", next);
 		} else {
-			LIGHT_WARN("ignoring controller '%s', cannot access", next);
+			LIGHT_WARN("found inaccessible controller '%s'", next);
 		}
 
 		free(next);

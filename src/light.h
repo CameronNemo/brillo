@@ -1,14 +1,6 @@
 #ifndef LIGHT_H
 #define LIGHT_H
 
-#include "helpers.h"
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <dirent.h>
-#include <linux/limits.h>
-
 #define LIGHT_PROG "brillo"
 #define LIGHT_VER_MAJOR 1
 #define LIGHT_VER_MINOR 2
@@ -17,20 +9,6 @@
 #define LIGHT_VENDOR "Cameron Nemo"
 #define LIGHT_YEAR 2014
 #define LIGHT_AUTHOR "Fredrik Haikarainen"
-
-#define ASSERT_SET(t,v) \
-  if(v)\
-  {\
-    fprintf(stderr, t" arguments can not be used in conjunction.\n");\
-    return false;\
-  }\
-  v = true;
-
-#define ASSERT_OPSET() ASSERT_SET("Operation", opSet)
-#define ASSERT_TARGETSET() ASSERT_SET("Target", targetSet)
-#define ASSERT_FIELDSET() ASSERT_SET("Field", fieldSet)
-#define ASSERT_CTRLSET() ASSERT_SET("Controller", ctrlSet)
-#define ASSERT_VALSET() ASSERT_SET("Value", valSet)
 
 typedef enum LIGHT_FIELD {
 	LIGHT_BRIGHTNESS = 0,
@@ -82,32 +60,5 @@ typedef struct {
 
 /* Global variable holding the settings for the current run */
 light_conf_t light_conf;
-
-/* Initialization */
-
-void light_defaults();
-bool light_parse_args(int argc, char **argv);
-void light_print_version(void);
-void light_print_help(void);
-bool light_list(void);
-bool light_info(bool exec);
-bool light_initialize(void);
-void light_free(void);
-
-/* Execution */
-
-bool light_execute(void);
-char *light_path_new(const char *controller, LIGHT_FIELD type);
-bool light_fetch(char const *controller, LIGHT_FIELD field, unsigned long *v);
-bool light_set(char const *controller, LIGHT_FIELD field, unsigned long v);
-bool light_ctrl_check(char const *controller);
-bool light_fetch_mincap(char const *controller, unsigned long *mincap);
-bool light_restore(char const *controller);
-char *light_ctrl_iter_next(DIR * dir);
-char *light_ctrl_auto();
-
-/* Misc */
-char *path_append(char * const str, const char *fmt, ...);
-char *path_new(void);
 
 #endif				/* LIGHT_H */

@@ -1,4 +1,9 @@
-#include "light.h"
+#include <stdlib.h>
+
+#include "helpers.h"
+#include "parse.h"
+#include "init.h"
+#include "exec.h"
 
 #define LIGHT_RETURNVAL_INITFAIL  2
 

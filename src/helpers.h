@@ -2,6 +2,7 @@
 #define LIGHT_HELPERS_H
 
 #include <stdbool.h>
+#include <stdio.h>
 
 #define LIGHT_CLAMP(val, min, max)					\
 	(val < min							\
@@ -27,17 +28,11 @@ light_loglevel_t light_loglevel;
 			fprintf(fp, "\n");		\
 		} while (0)
 
-#define LIGHT_NOTE(...) LIGHT_LOG(LIGHT_NOTE_LEVEL,  stderr, "NOTE: ", __VA_ARGS__)
-#define LIGHT_WARN(...) LIGHT_LOG(LIGHT_WARN_LEVEL,  stderr, "WARN: ", __VA_ARGS__)
-#define LIGHT_ERR(...)  LIGHT_LOG(LIGHT_ERROR_LEVEL, stderr, "!ERR: ", __VA_ARGS__)
-#define LIGHT_MEMERR()  LIGHT_ERR("memory error");
-#define LIGHT_PERMLOG(act, log)						\
-	do {								\
-		log("could not open '%s' for " act, filename);		\
-		log("Verify it exists with the right permissions");	\
-	} while (0)
-#define LIGHT_PERMERR(x)         LIGHT_PERMLOG(x, LIGHT_ERR)
-#define LIGHT_PERMWARN(x)        LIGHT_PERMLOG(x, LIGHT_WARN)
+#define LIGHT_NOTE(...)  LIGHT_LOG(LIGHT_NOTE_LEVEL,  stderr, "NOTE: ", __VA_ARGS__)
+#define LIGHT_WARN(...)  LIGHT_LOG(LIGHT_WARN_LEVEL,  stderr, "WARN: ", __VA_ARGS__)
+#define LIGHT_ERR(...)   LIGHT_LOG(LIGHT_ERROR_LEVEL, stderr, "!ERR: ", __VA_ARGS__)
+#define LIGHT_MEMERR()   LIGHT_ERR("memory error");
+#define LIGHT_PERMERR(x) LIGHT_ERR("fopen: %s: '%s' for " x, strerror(errno), filename);
 
 bool light_write_val(char const *filename, unsigned long v);
 bool light_read_val(char const *filename, unsigned long *v);

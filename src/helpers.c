@@ -1,10 +1,5 @@
+#include "common.h"
 #include "helpers.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <dirent.h>
 
 bool light_write_val(char const *filename, unsigned long i)
 {
@@ -54,31 +49,23 @@ bool light_read_val(char const *filename, unsigned long *i)
 
 unsigned long light_log_clamp_min(unsigned long x)
 {
-	LIGHT_NOTE
-	    ("specified value is inferior to %lu (raw), so adjusting it to this mininum value",
-	     x);
+	LIGHT_NOTE("raising specified value to min: %lu (raw)", x);
 	return x;
 }
 
 unsigned long light_log_clamp_max(unsigned long x)
 {
-	LIGHT_NOTE
-	    ("specified value is superior to %lu (raw), so adjusting it to this maximum value",
-	     x);
+	LIGHT_NOTE("lowering specified value to max: %lu (raw)", x);
 	return x;
 }
 
 double light_clamp_pct(double p)
 {
 	if (p < 0.0) {
-		LIGHT_WARN
-		    ("specified value %g%% is not valid, adjusting it to 0%%",
-		     p);
+		LIGHT_WARN("raising specified value %g%% to 0%%", p);
 		return 0.0;
 	} else if (p > 100.0) {
-		LIGHT_WARN
-		    ("specified value %g%% is not valid, adjusting it to 100%%",
-		     p);
+		LIGHT_WARN("lowering specified value %g%% to 100%%", p);
 		return 100.0;
 	}
 	return p;

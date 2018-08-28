@@ -20,7 +20,7 @@ MANFLAGS=-h -h -v -V -N -s 1 -n "$(DESC)"
 
 HELP2MAN := $(shell which help2man 2>/dev/null)
 
-brillo: src/helpers.c src/light.c src/light_init.c src/main.c
+brillo: src/helpers.c src/parse.c src/path.c src/ctrl.c src/info.c src/init.c src/exec.c src/main.c
 	$(CC) $(CFLAGS) -g -o $@ $^
 
 install:

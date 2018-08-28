@@ -171,8 +171,15 @@ Any user in this group can modify the brightness directly.
 
 > Note: in this mode, stored brightness and minimum cap files will be in the user's cache home (typically "~/.cache").
 
+See Also
+--------
+
+[clight](https://github.com/FedeDP/Clight): provides dimming based on ambient light and color correction (like redshift or flux) using GeoClue
+
+[ddcutil](http://www.ddcutil.com/): designed to control brightness and color correction for external monitors
+
 Copyright
--------------------
+---------
 
 Copyright (C) 2018 Cameron Nemo, 2014 Fredrik Haikarainen
 

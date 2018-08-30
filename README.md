@@ -165,9 +165,9 @@ Examples:
 
 ### udev
 
-`brillo`'s udev rule grants necessary permissions to the `video` group.
+`brillo`'s udev rule grants necessary permissions to the `video` group for backlight devices and to the `input` group for keyboard LED devices.
 
-Any user in this group can modify the brightness directly.
+Any user in these groups can modify values directly.
 
 > Note: in this mode, stored brightness and minimum cap files will be in the user's cache home (typically "~/.cache").
 

@@ -42,7 +42,7 @@ install-dist: install
 	install -dZ -m 755 $(MANDIR) $(PKEDIR) $(UDEVDIR) $(AADIR)
 	install -DZ -m 644 $(PROG).1 -t $(MANDIR)
 	install -DZ -m 644 contrib/$(VENDOR).$(PROG).policy -t $(PKEDIR)
-	install -DZ -m 644 contrib/90-backlight.rules -t $(UDEVDIR)
+	install -DZ -m 644 contrib/90-brillo.rules -t $(UDEVDIR)
 	install -DZ -m 644 contrib/bin.brillo -t $(AADIR)
 
 uninstall:
@@ -51,9 +51,9 @@ uninstall:
 uninstall-dist:
 	rm -f $(MANDIR)/$(PROG).1
 	rm -f $(PKEDIR)/$(VENDOR).$(PROG).policy
-	rm -f $(UDEVDIR)/90-backlight.rules
+	rm -f $(UDEVDIR)/90-brillo.rules
 
 clean:
-	rm -vfr *~ $(PROG) $(PROG).1 contrib/light contrib/$(VENDOR).$(PROG).policy
+	rm -vfr *~ $(PROG) $(PROG).1 contrib/$(VENDOR).$(PROG).policy
 
 .PHONY: install uninstall clean

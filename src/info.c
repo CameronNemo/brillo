@@ -104,9 +104,9 @@ void light_print_help()
 	printf("  -k:\t\tAct on keyboard backlight\n\n");
 
 	printf("Fields (can not be used in conjunction):\n");
-	printf("  -b:\t\tBrightness (default)\n  \t\tUsed with [GSAU]\n\n");
-	printf("  -m:\t\tMaximum brightness\n  \t\tUsed with [G]\n\n");
-	printf("  -c:\t\tMinimum cap\n  \t\tUsed with [GS]\n");
+	printf("  -b:\t\tBrightness (default) (used with [GSAU])\n");
+	printf("  -m:\t\tMaximum brightness (used with [G])\n");
+	printf("  -c:\t\tMinimum cap (used with [GS])\n\n");
 
 	printf("Controller selection (can not be used in conjunction):\n");
 	printf("  -a:\t\tSelects controller automatically (default).\n");

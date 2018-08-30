@@ -49,42 +49,28 @@ void light_defaults()
  **/
 bool light_check_ops()
 {
-	bool valid = true;
 	LIGHT_OP_MODE op = light_conf.op_mode;
 
 	/* Nothing to check if we just print info */
-	if (op == LIGHT_PRINT_HELP || op == LIGHT_PRINT_VERSION
-	    || op == LIGHT_LIST_CTRL) {
+	if (op == LIGHT_PRINT_HELP ||
+	    op == LIGHT_PRINT_VERSION ||
+	    op == LIGHT_LIST_CTRL)
 		return true;
-	}
 
 	switch (light_conf.field) {
-	case LIGHT_BRIGHTNESS:
-		if (op != LIGHT_GET && op != LIGHT_SET &&
-		    op != LIGHT_ADD && op != LIGHT_SUB &&
-		    op != LIGHT_SAVE && op != LIGHT_RESTORE) {
-			valid = false;
-			fprintf(stderr,
-				"Wrong operation specified for brightness. You can use only -G -S -A or -U\n\n");
-		}
-		break;
 	case LIGHT_MAX_BRIGHTNESS:
-		if (op != LIGHT_GET) {
-			valid = false;
+		if (op != LIGHT_GET)
 			fprintf(stderr,
-				"Wrong operation specified for max brightness. You can only use -G\n\n");
-		}
-		break;
+				"You can only use -G with the brightness field.\n\n");
+		return false;
 	case LIGHT_MIN_CAP:
-		if (op != LIGHT_GET && op != LIGHT_SET) {
-			valid = false;
+		if (op != LIGHT_GET && op != LIGHT_SET)
 			fprintf(stderr,
-				"Wrong operation specified for min cap. You can only use -G or -S\n\n");
-		}
+				"You can only use -G or -S with the min cap field.\n\n");
+		return false;
 	default:
-		break;
+		return true;
 	}
-	return valid;
 }
 
 /**
@@ -183,11 +169,6 @@ bool light_parse_args(int argc, char **argv)
 		case 's':
 			ASSERT_CTRLSET();
 			light_conf.ctrl_mode = LIGHT_SPECIFY;
-			if (optarg == NULL) {
-				fprintf(stderr, "-s NEEDS an argument.\n\n");
-				light_print_help();
-				return false;
-			}
 
 			if (!path_component(optarg)) {
 				fprintf(stderr,
@@ -209,20 +190,15 @@ bool light_parse_args(int argc, char **argv)
 
 			/* -- Other -- */
 		case 'v':
-			if (optarg == NULL) {
-				fprintf(stderr, "-v NEEDS an argument.\n\n");
-				light_print_help();
-				return false;
-			}
 			if (sscanf(optarg, "%i", &verbosity) != 1) {
 				fprintf(stderr,
-					"-v Verbosity is not specified in a recognizable format.\n\n");
+					"Verbosity not specified in a recognizable format.\n\n");
 				light_print_help();
 				return false;
 			}
 			if (verbosity < 0 || verbosity > 3) {
 				fprintf(stderr,
-					"-v Verbosity has to be between 0 and 3.\n\n");
+					"Verbosity has to be between 0 and 3.\n\n");
 				light_print_help();
 				return false;
 			}

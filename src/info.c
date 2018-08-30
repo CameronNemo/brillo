@@ -107,7 +107,6 @@ void light_print_help()
 	printf("  -b:\t\tBrightness (default)\n  \t\tUsed with [GSAU]\n\n");
 	printf("  -m:\t\tMaximum brightness\n  \t\tUsed with [G]\n\n");
 	printf("  -c:\t\tMinimum cap\n  \t\tUsed with [GS]\n");
-	printf("  \t\tG returns null if no minimum cap is set.\n\n");
 
 	printf("Controller selection (can not be used in conjunction):\n");
 	printf("  -a:\t\tSelects controller automatically (default).\n");

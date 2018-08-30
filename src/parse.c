@@ -59,14 +59,14 @@ bool light_check_ops()
 
 	switch (light_conf.field) {
 	case LIGHT_MAX_BRIGHTNESS:
-		if (op != LIGHT_GET)
-			fprintf(stderr,
-				"You can only use -G with the brightness field.\n\n");
+		if (op == LIGHT_GET)
+			return true;
+		fprintf(stderr, "You can only use -G with the brightness field.\n\n");
 		return false;
 	case LIGHT_MIN_CAP:
-		if (op != LIGHT_GET && op != LIGHT_SET)
-			fprintf(stderr,
-				"You can only use -G or -S with the min cap field.\n\n");
+		if (op == LIGHT_GET || op == LIGHT_SET)
+			return true;
+		fprintf(stderr, "You can only use -G or -S with the min cap field.\n\n");
 		return false;
 	default:
 		return true;
@@ -88,6 +88,8 @@ bool light_parse_args(int argc, char **argv)
 	int opt;
 	int verbosity;
 
+	char *value = NULL;
+
 	bool opSet = false;
 	bool targetSet = false;
 	bool fieldSet = false;
@@ -96,7 +98,7 @@ bool light_parse_args(int argc, char **argv)
 
 	light_defaults();
 
-	while ((opt = getopt(argc, argv, "HhVGSAULIObmclkas:prv:")) != -1) {
+	while ((opt = getopt(argc, argv, "HhVGS:A:U:LIObmclkas:prv:")) != -1) {
 		switch (opt) {
 			/* -- Operations -- */
 		case 'H':
@@ -115,14 +117,17 @@ bool light_parse_args(int argc, char **argv)
 		case 'S':
 			ASSERT_OPSET();
 			light_conf.op_mode = LIGHT_SET;
+			value = optarg;
 			break;
 		case 'A':
 			ASSERT_OPSET();
 			light_conf.op_mode = LIGHT_ADD;
+			value = optarg;
 			break;
 		case 'U':
 			ASSERT_OPSET();
 			light_conf.op_mode = LIGHT_SUB;
+			value = optarg;
 			break;
 		case 'L':
 			ASSERT_OPSET();
@@ -215,31 +220,22 @@ bool light_parse_args(int argc, char **argv)
 		return false;
 	}
 
-	/* If we need a <value> (for writing), make sure we have it! */
-	if (light_conf.op_mode == LIGHT_SET ||
-	    light_conf.op_mode == LIGHT_ADD ||
-	    light_conf.op_mode == LIGHT_SUB) {
-		if (argc - optind != 1) {
-			LIGHT_ERR("need an argument for <value>");
+	/* Parse <value> (for set/add/subtract operations) */
+	if (value) {
+		int r;
+		if (light_conf.val_mode == LIGHT_PERCENT)
+			r = sscanf(value, "%lf", &light_conf.val_pct);
+		else
+			r = sscanf(value, "%lu", &light_conf.val_raw);
+
+		if (r != 1) {
+			LIGHT_ERR("<value> not specified in a recognizable format");
 			light_print_help();
 			return false;
 		}
 
-		if (light_conf.val_mode == LIGHT_PERCENT) {
-			if (sscanf(argv[optind], "%lf", &light_conf.val_pct) != 1) {
-				LIGHT_ERR("<value> not specified in a recognizable format");
-				light_print_help();
-				return false;
-			}
+		if (light_conf.val_mode == LIGHT_PERCENT)
 			light_conf.val_pct = light_clamp_pct(light_conf.val_pct);
-		} else {
-			if (sscanf(argv[optind], "%lu", &light_conf.val_raw) != 1) {
-				LIGHT_ERR("<value> not specified in a recognizable format");
-				light_print_help();
-				return false;
-			}
-		}
-
 	}
 
 	return true;

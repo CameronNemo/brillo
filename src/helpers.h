@@ -1,6 +1,7 @@
 #ifndef LIGHT_HELPERS_H
 #define LIGHT_HELPERS_H
 
+#include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
 
@@ -34,16 +35,16 @@ light_loglevel_t light_loglevel;
 #define LIGHT_MEMERR()   LIGHT_ERR("memory error");
 #define LIGHT_PERMERR(x) LIGHT_ERR("fopen: %s: '%s' for " x, strerror(errno), filename);
 
-bool light_write_val(char const *filename, unsigned long v);
-bool light_read_val(char const *filename, unsigned long *v);
+bool light_write_val(char const *filename, uint64_t v);
+bool light_read_val(char const *filename, uint64_t *v);
 
 /* Clamps the `percent` value between 0% and 100% */
 double light_clamp_pct(double percent);
 
 /* Prints a notice about a value which was below `x` and was adjusted to it */
-unsigned long light_log_clamp_min(unsigned long x);
+uint64_t light_log_clamp_min(uint64_t x);
 
 /* Prints a notice about a value which was above `x` and was adjusted to it */
-unsigned long light_log_clamp_max(unsigned long x);
+uint64_t light_log_clamp_max(uint64_t x);
 
 #endif				/* LIGHT_HELPERS_H */

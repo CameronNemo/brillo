@@ -1,8 +1,8 @@
 #ifndef INFO_H
 #define INFO_H
 
-void light_print_version(void);
-void light_print_help(void);
-bool light_info(bool exec);
+void info_print_version(void);
+void info_print_help(void);
+bool info_print(bool exec);
 
 #endif /* INFO_H */

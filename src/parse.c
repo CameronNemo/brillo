@@ -26,7 +26,7 @@
  *
  * Initialize the default configuration values.
  **/
-void light_defaults()
+static void light_defaults()
 {
 	light_conf.ctrl_mode = LIGHT_AUTO;
 	light_conf.ctrl = NULL;
@@ -47,7 +47,7 @@ void light_defaults()
  *
  * Returns: false if an invalid operation mode is used, otherwise true.
  **/
-bool light_check_ops()
+static bool light_check_ops()
 {
 	LIGHT_OP_MODE op = light_conf.op_mode;
 
@@ -198,25 +198,25 @@ bool light_parse_args(int argc, char **argv)
 			if (sscanf(optarg, "%i", &verbosity) != 1) {
 				fprintf(stderr,
 					"Verbosity not specified in a recognizable format.\n\n");
-				light_print_help();
+				info_print_help();
 				return false;
 			}
 			if (verbosity < 0 || verbosity > 3) {
 				fprintf(stderr,
 					"Verbosity has to be between 0 and 3.\n\n");
-				light_print_help();
+				info_print_help();
 				return false;
 			}
 			light_loglevel = (light_loglevel_t) verbosity;
 			break;
 		default:
-			light_print_help();
+			info_print_help();
 			return false;
 		}
 	}
 
 	if (!light_check_ops()) {
-		light_print_help();
+		info_print_help();
 		return false;
 	}
 
@@ -230,7 +230,7 @@ bool light_parse_args(int argc, char **argv)
 
 		if (r != 1) {
 			LIGHT_ERR("<value> not specified in a recognizable format");
-			light_print_help();
+			info_print_help();
 			return false;
 		}
 

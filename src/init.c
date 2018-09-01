@@ -7,13 +7,13 @@
 #include "light.h"
 
 /**
- * light_init_sys:
+ * init_sys:
  *
  * Initializes the sys prefix string.
  *
  * Returns: pointer to allocated prefix, or NULL on failure
  **/
-char *light_init_sys(const char *tgt)
+static char *init_sys(const char *tgt)
 {
 	char *s;
 
@@ -24,14 +24,14 @@ char *light_init_sys(const char *tgt)
 }
 
 /**
- * light_init_cache:
+ * init_cache:
  *
  * Initializes the cache prefix string,
  * attempts to create the directory.
  *
  * Returns: pointer to allocated prefix, or NULL on failure
  **/
-char *light_init_cache(const char * const tgt)
+static char *init_cache(const char * const tgt)
 {
 	char *s;
 	const char *env, *dirfmt;
@@ -85,14 +85,14 @@ bool light_initialize()
 	else
 		return false;
 
-	if (!(light_conf.sys_prefix = light_init_sys(tgt)))
+	if (!(light_conf.sys_prefix = init_sys(tgt)))
 		return false;
 
 	/* info mode needs no more initialization */
-	if (light_info(false))
+	if (info_print(false))
 		return true;
 
-	if (!(light_conf.cache_prefix = light_init_cache(tgt)))
+	if (!(light_conf.cache_prefix = init_cache(tgt)))
 		return false;
 
 	/* Make sure we have a valid controller before we proceed */

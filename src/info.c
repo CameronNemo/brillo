@@ -4,10 +4,10 @@
 #include "light.h"
 #include "info.h"
 
-bool light_list(void);
+static bool info_list(void);
 
 /**
- * light_info:
+ * info_print:
  * @exec:	whether or not to take action
  *
  * If exec is true, prints information
@@ -15,20 +15,20 @@ bool light_list(void);
  *
  * Returns: true if op_mode is an info mode, otherwise false
  **/
-bool light_info(bool exec)
+bool info_print(bool exec)
 {
 	switch (light_conf.op_mode) {
 		case LIGHT_PRINT_HELP:
 			if (exec)
-				light_print_help();
+				info_print_help();
 			break;
 		case LIGHT_PRINT_VERSION:
 			if (exec)
-				light_print_version();
+				info_print_version();
 			break;
 		case LIGHT_LIST_CTRL:
 			if (exec)
-				light_list();
+				info_list();
 			break;
 		default:
 			return false;
@@ -38,14 +38,14 @@ bool light_info(bool exec)
 }
 
 /**
- * light_list:
+ * info_list:
  *
  * Prints controller names for the appropriate target.
  *
  * Returns: false if could not list controllers or no
  * 		controllers found, otherwise true
  **/
-bool light_list()
+bool info_list()
 {
 	DIR *dir;
 
@@ -64,11 +64,11 @@ bool light_list()
 }
 
 /**
- * light_print_version:
+ * info_print_version:
  *
  * Prints version and copyright information to standard output.
  **/
-void light_print_version()
+void info_print_version()
 {
 	printf("%s %u.%u (%s)\n", LIGHT_PROG, LIGHT_VER_MAJOR, LIGHT_VER_MINOR,
 	       LIGHT_VER_TYPE);
@@ -81,11 +81,11 @@ void light_print_version()
 }
 
 /**
- * light_print_help:
+ * info_print_help:
  *
  * Prints help dialog to standard output.
  **/
-void light_print_help()
+void info_print_help()
 {
 	printf("Usage: %s [operation] [value] [-k] [-r] [-m|-c] [-s controller] [-v loglevel]\n", LIGHT_PROG);
 	printf("Operations (can not be used in conjunction):\n");

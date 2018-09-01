@@ -4,18 +4,20 @@
 #include "light.h"
 #include "exec.h"
 
-bool light_fetch_mincap(char const *controller, unsigned long *mincap);
-bool light_set(char const *controller, LIGHT_FIELD field, unsigned long v);
-bool light_restore(char const *controller);
+static bool exec_fetch_mincap(char const *controller, uint64_t *mincap);
+static bool exec_set_field(char const *controller, LIGHT_FIELD field, uint64_t v);
+static bool exec_set(uint64_t curr, uint64_t max, uint64_t mincap);
+static bool exec_restore(char const *controller);
+static bool exec_init(uint64_t * curr, uint64_t * max, uint64_t * mincap);
 
 /**
- * light_exec_init:
+ * exec_init:
  *
  * Initializes values needed to execute the requested operation.
  *
  * Returns: true on success, false on failure
  **/
-bool light_exec_init(unsigned long *curr, unsigned long *max, unsigned long *mincap)
+static bool exec_init(uint64_t * curr, uint64_t * max, uint64_t * mincap)
 {
 	if (light_conf.cached_max != 0) {
 		*max = light_conf.cached_max;
@@ -38,7 +40,7 @@ bool light_exec_init(unsigned long *curr, unsigned long *max, unsigned long *min
 		return false;
 	}
 
-	if (!light_fetch_mincap(light_conf.ctrl, mincap)) {
+	if (!exec_fetch_mincap(light_conf.ctrl, mincap)) {
 		LIGHT_ERR("could not get mincap");
 		return false;
 	}
@@ -53,7 +55,7 @@ bool light_exec_init(unsigned long *curr, unsigned long *max, unsigned long *min
 }
 
 /**
- * light_exec_get:
+ * exec_get:
  * @curr:	current raw value
  * @max:	maximum raw value
  * @mincap:	minimum raw value
@@ -62,9 +64,9 @@ bool light_exec_init(unsigned long *curr, unsigned long *max, unsigned long *min
  *
  * Returns: true on success, false on failure
  **/
-bool light_exec_get(unsigned long curr, unsigned long max, unsigned long mincap)
+static bool exec_get(uint64_t curr, uint64_t max, uint64_t mincap)
 {
-	unsigned long raw;
+	uint64_t raw;
 	double pct;
 
 	if (max == 0)
@@ -98,7 +100,7 @@ bool light_exec_get(unsigned long curr, unsigned long max, unsigned long mincap)
 }
 
 /**
- * light_exec_set:
+ * exec_set:
  * @curr:	current raw value
  * @max:	maximum raw value
  * @mincap:	minimum raw value
@@ -107,15 +109,14 @@ bool light_exec_get(unsigned long curr, unsigned long max, unsigned long mincap)
  *
  * Returns: true on success, false on failure
  **/
-bool light_exec_set(unsigned long curr, unsigned long max,
-			    unsigned long mincap)
+static bool exec_set(uint64_t curr, uint64_t max, uint64_t mincap)
 {
-	unsigned long val;
+	uint64_t val;
 
 	if (light_conf.val_mode == LIGHT_RAW)
 		val = light_conf.val_raw;
 	else
-		val = (unsigned long)((light_conf.val_pct * ((double)max)) / 100.0);
+		val = (uint64_t)((light_conf.val_pct * ((double)max)) / 100.0);
 
 	if (light_conf.field == LIGHT_BRIGHTNESS) {
 		switch (light_conf.op_mode) {
@@ -125,8 +126,10 @@ bool light_exec_set(unsigned long curr, unsigned long max,
 				val = -curr;
 			else
 				val = -val;
+			/* FALLTHRU */
 		case LIGHT_ADD:
 			val += curr;
+			break;
 		case LIGHT_SET:
 			break;
 		default:
@@ -137,7 +140,7 @@ bool light_exec_set(unsigned long curr, unsigned long max,
 	}
 
 	val = LIGHT_CLAMP(val, mincap, max);
-	return light_set (light_conf.ctrl, light_conf.field, val);
+	return exec_set_field (light_conf.ctrl, light_conf.field, val);
 }
 
 /**
@@ -148,29 +151,29 @@ bool light_exec_set(unsigned long curr, unsigned long max,
  **/
 bool light_execute()
 {
-	unsigned long curr;	/* The current brightness, in raw units */
-	unsigned long max;	/* The max brightness, in raw units */
-	unsigned long mincap;	/* The minimum cap, in raw units */
+	uint64_t curr;	/* The current brightness, in raw units */
+	uint64_t max;	/* The max brightness, in raw units */
+	uint64_t mincap;	/* The minimum cap, in raw units */
 
-	if (light_info(false))
-		return light_info(true);
+	if (info_print(false))
+		return info_print(true);
 
-	if (!light_exec_init(&curr, &max, &mincap))
+	if (!exec_init(&curr, &max, &mincap))
 		return false;
 
 	LIGHT_NOTE("executing light on '%s' controller", light_conf.ctrl);
 
 	switch (light_conf.op_mode) {
 	case LIGHT_GET:
-		return light_exec_get(curr, max, mincap);
+		return exec_get(curr, max, mincap);
 	case LIGHT_SAVE:
-		return light_set(light_conf.ctrl, LIGHT_SAVERESTORE, curr);
+		return exec_set_field(light_conf.ctrl, LIGHT_SAVERESTORE, curr);
 	case LIGHT_RESTORE:
-		return light_restore(light_conf.ctrl);
+		return exec_restore(light_conf.ctrl);
 	case LIGHT_SET:
 	case LIGHT_SUB:
 	case LIGHT_ADD:
-		return light_exec_set(curr, max, mincap);
+		return exec_set(curr, max, mincap);
 	default:
 		/* Should not be reached */
 		fprintf(stderr,
@@ -180,7 +183,7 @@ bool light_execute()
 			light_conf.field);
 		fprintf(stderr,
 			"Invalid combination of commandline arguments.\n");
-		light_print_help();
+		info_print_help();
 		return false;
 	}
 }
@@ -246,7 +249,7 @@ char *light_path_new(const char *controller, LIGHT_FIELD type)
  *
  * Returns: true if value is successfully read, otherwise false
  **/
-bool light_fetch(char const *controller, LIGHT_FIELD field, unsigned long *v)
+bool light_fetch(char const *controller, LIGHT_FIELD field, uint64_t *v)
 {
 	char *path;
 	bool r;
@@ -262,7 +265,7 @@ bool light_fetch(char const *controller, LIGHT_FIELD field, unsigned long *v)
 }
 
 /**
- * light_set:
+ * exec_set_field:
  * @controller: name of controller device
  * @field:	field to write value into
  * @v:		new value
@@ -271,7 +274,7 @@ bool light_fetch(char const *controller, LIGHT_FIELD field, unsigned long *v)
  *
  * Returns: true if write was successful, otherwise false
  **/
-bool light_set(char const *controller, LIGHT_FIELD field, unsigned long v)
+static bool exec_set_field(char const *controller, LIGHT_FIELD field, uint64_t v)
 {
 	char *path;
 	bool r;
@@ -292,13 +295,13 @@ bool light_set(char const *controller, LIGHT_FIELD field, unsigned long v)
 }
 
 /**
- * light_fetch_mincap:
+ * exec_fetch_mincap:
  * @controller:	name of controller device
  * @mincap:	pointer to store the minimum cap value
  *
  * Returns: false if could not determine minimum cap, otherwise true
  **/
-bool light_fetch_mincap(char const *controller, unsigned long *mincap)
+static bool exec_fetch_mincap(char const *controller, uint64_t *mincap)
 {
 	if (light_fetch(controller, LIGHT_MIN_CAP, mincap))
 		return true;
@@ -308,16 +311,16 @@ bool light_fetch_mincap(char const *controller, unsigned long *mincap)
 }
 
 /**
- * light_restore:
+ * exec_restore:
  * @controller: name of controller device
  *
  * Restores the brightness value for a given controller.
  *
  * Returns: true if write was successful, otherwise false
  **/
-bool light_restore(char const *controller)
+static bool exec_restore(char const *controller)
 {
-	unsigned long v = 0;
+	uint64_t v = 0;
 
 	LIGHT_NOTE("restoring brightness from saved file");
 
@@ -326,7 +329,7 @@ bool light_restore(char const *controller)
 		return false;
 	}
 
-	if (!light_set(controller, LIGHT_BRIGHTNESS, v)) {
+	if (!exec_set_field(controller, LIGHT_BRIGHTNESS, v)) {
 		LIGHT_ERR("could not set restored brightness");
 		return false;
 	}

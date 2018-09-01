@@ -51,11 +51,11 @@ typedef struct {
 	char *ctrl;
 	LIGHT_OP_MODE op_mode;
 	LIGHT_VAL_MODE val_mode;
-	unsigned long val_raw;
+	uint64_t val_raw;
 	double val_pct;
 	LIGHT_TARGET target;
 	LIGHT_FIELD field;
-	unsigned long cached_max;
+	uint64_t cached_max;
 } light_conf_t;
 
 /* Global variable holding the settings for the current run */

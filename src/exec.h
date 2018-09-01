@@ -5,6 +5,6 @@
 
 bool light_execute(void);
 char *light_path_new(const char *controller, LIGHT_FIELD type);
-bool light_fetch(char const *controller, LIGHT_FIELD field, unsigned long *v);
+bool light_fetch(char const *controller, LIGHT_FIELD field, uint64_t *v);
 
 #endif /* EXEC_H */

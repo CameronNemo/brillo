@@ -104,7 +104,7 @@ char *light_ctrl_auto()
 	}
 
 	while ((next = light_ctrl_iter_next(dir))) {
-		unsigned long max = 0;
+		uint64_t max = 0;
 
 		if (light_ctrl_check(next)
 		    && light_fetch(next, LIGHT_MAX_BRIGHTNESS, &max)) {

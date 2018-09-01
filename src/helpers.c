@@ -1,7 +1,7 @@
 #include "common.h"
 #include "helpers.h"
 
-bool light_write_val(char const *filename, unsigned long i)
+bool light_write_val(char const *filename, uint64_t i)
 {
 	FILE *fileHandle;
 
@@ -22,10 +22,10 @@ bool light_write_val(char const *filename, unsigned long i)
 	return true;
 }
 
-bool light_read_val(char const *filename, unsigned long *i)
+bool light_read_val(char const *filename, uint64_t *i)
 {
 	FILE *fileHandle;
-	unsigned long iCopy;
+	uint64_t iCopy;
 
 	fileHandle = fopen(filename, "r");
 
@@ -47,13 +47,13 @@ bool light_read_val(char const *filename, unsigned long *i)
 	return true;
 }
 
-unsigned long light_log_clamp_min(unsigned long x)
+uint64_t light_log_clamp_min(uint64_t x)
 {
 	LIGHT_NOTE("raising specified value to min: %lu (raw)", x);
 	return x;
 }
 
-unsigned long light_log_clamp_max(unsigned long x)
+uint64_t light_log_clamp_max(uint64_t x)
 {
 	LIGHT_NOTE("lowering specified value to max: %lu (raw)", x);
 	return x;

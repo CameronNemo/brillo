@@ -12,7 +12,7 @@ bool light_write_val(char const *filename, uint64_t i)
 		return false;
 	}
 
-	if (fprintf(fileHandle, "%lu", i) < 0) {
+	if (fprintf(fileHandle, "%" SCNu64, i) < 0) {
 		LIGHT_ERR("fprintf failed");
 		fclose(fileHandle);
 		return false;
@@ -34,7 +34,7 @@ bool light_read_val(char const *filename, uint64_t *i)
 		return false;
 	}
 
-	if (fscanf(fileHandle, "%lu", &iCopy) != 1) {
+	if (fscanf(fileHandle, "%" SCNu64, &iCopy) != 1) {
 		LIGHT_ERR("Couldn't parse a positive integer number from '%s'",
 			  filename);
 		fclose(fileHandle);
@@ -49,13 +49,13 @@ bool light_read_val(char const *filename, uint64_t *i)
 
 uint64_t light_log_clamp_min(uint64_t x)
 {
-	LIGHT_NOTE("raising specified value to min: %lu (raw)", x);
+	LIGHT_NOTE("raising specified value to min: %" SCNu64 " (raw)", x);
 	return x;
 }
 
 uint64_t light_log_clamp_max(uint64_t x)
 {
-	LIGHT_NOTE("lowering specified value to max: %lu (raw)", x);
+	LIGHT_NOTE("lowering specified value to max: %" SCNu64 " (raw)", x);
 	return x;
 }
 

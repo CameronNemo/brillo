@@ -46,8 +46,8 @@ static bool exec_init(uint64_t * curr, uint64_t * max, uint64_t * mincap)
 	}
 
 	if (*mincap > *max) {
-		LIGHT_ERR("invalid mincap value of '%lu'", *mincap);
-		LIGHT_ERR("mincap must be inferior to '%lu'", *max);
+		LIGHT_ERR("invalid mincap value of '%" SCNu64 "'", *mincap);
+		LIGHT_ERR("mincap must be inferior to '%" SCNu64 "'", *max);
 		return false;
 	}
 
@@ -92,7 +92,7 @@ static bool exec_get(uint64_t curr, uint64_t max, uint64_t mincap)
 	}
 
 	if (light_conf.val_mode == LIGHT_RAW)
-		printf("%lu\n", raw);
+		printf("%" SCNu64 "\n", raw);
 	else
 		printf("%.2f\n", pct);
 
@@ -177,7 +177,7 @@ bool light_execute()
 	default:
 		/* Should not be reached */
 		fprintf(stderr,
-			"Controller: %s\nValueRaw: %lu\nValuePercent: %.2f\nOpMode: %u\nValMode: %u\nField: %u\n\n",
+			"Controller: %s\nValueRaw: %" SCNu64 "\nValuePercent: %.2f\nOpMode: %u\nValMode: %u\nField: %u\n\n",
 			light_conf.ctrl, light_conf.val_raw, light_conf.val_pct,
 			light_conf.op_mode, light_conf.val_mode,
 			light_conf.field);
@@ -282,7 +282,7 @@ static bool exec_set_field(char const *controller, LIGHT_FIELD field, uint64_t v
 	if (!(path = light_path_new(controller, field)))
 		return false;
 
-	LIGHT_NOTE("writing value %lu (raw) to '%s'", v, path);
+	LIGHT_NOTE("writing value %" SCNu64 " (raw) to '%s'", v, path);
 
 	r = light_write_val(path, v);
 	free(path);

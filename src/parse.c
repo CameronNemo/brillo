@@ -226,7 +226,7 @@ bool light_parse_args(int argc, char **argv)
 		if (light_conf.val_mode == LIGHT_PERCENT)
 			r = sscanf(value, "%lf", &light_conf.val_pct);
 		else
-			r = sscanf(value, "%lu", &light_conf.val_raw);
+			r = sscanf(value, "%" SCNu64, &light_conf.val_raw);
 
 		if (r != 1) {
 			LIGHT_ERR("<value> not specified in a recognizable format");

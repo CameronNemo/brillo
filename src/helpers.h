@@ -2,6 +2,7 @@
 #define LIGHT_HELPERS_H
 
 #include <stdint.h>
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stdio.h>
 

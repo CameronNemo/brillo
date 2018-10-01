@@ -1,6 +1,8 @@
 #ifndef LIGHT_H
 #define LIGHT_H
 
+#include <stdint.h>
+
 #define LIGHT_PROG "brillo"
 #define LIGHT_VER_MAJOR 1
 #define LIGHT_VER_MINOR 2
@@ -58,7 +60,10 @@ typedef struct {
 	uint64_t cached_max;
 } light_conf_t;
 
+light_conf_t *light_new(void);
+void light_free(light_conf_t *conf);
+
 /* Global variable holding the settings for the current run */
-light_conf_t light_conf;
+//light_conf_t light_conf;
 
 #endif				/* LIGHT_H */

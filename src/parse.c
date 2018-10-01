@@ -11,7 +11,7 @@
   if(v)\
   {\
     fprintf(stderr, t" arguments can not be used in conjunction.\n");\
-    return false;\
+    goto error;\
   }\
   v = true;
 
@@ -22,42 +22,23 @@
 #define ASSERT_VALSET() ASSERT_SET("Value", valSet)
 
 /**
- * light_defaults:
+ * parse_check:
+ * @op:		operation being done
+ * @field:	field being accessed
  *
- * Initialize the default configuration values.
- **/
-static void light_defaults()
-{
-	light_conf.ctrl_mode = LIGHT_AUTO;
-	light_conf.ctrl = NULL;
-	light_conf.op_mode = LIGHT_GET;
-	light_conf.val_mode = LIGHT_PERCENT;
-	light_conf.val_raw = 0;
-	light_conf.val_pct = 0.0;
-	light_conf.target = LIGHT_BACKLIGHT;
-	light_conf.field = LIGHT_BRIGHTNESS;
-	light_conf.cached_max = 0;
-	light_loglevel = 0;
-}
-
-/**
- * light_check_ops:
- *
- * Ensure that the op_mode is valid for the configuration's field.
+ * Ensure that the operation is valid for the field.
  *
  * Returns: false if an invalid operation mode is used, otherwise true.
  **/
-static bool light_check_ops()
+static bool parse_check(LIGHT_OP_MODE op, LIGHT_FIELD field)
 {
-	LIGHT_OP_MODE op = light_conf.op_mode;
-
 	/* Nothing to check if we just print info */
 	if (op == LIGHT_PRINT_HELP ||
 	    op == LIGHT_PRINT_VERSION ||
 	    op == LIGHT_LIST_CTRL)
 		return true;
 
-	switch (light_conf.field) {
+	switch (field) {
 	case LIGHT_MAX_BRIGHTNESS:
 		if (op == LIGHT_GET)
 			return true;
@@ -74,21 +55,24 @@ static bool light_check_ops()
 }
 
 /**
- * light_parse_args:
+ * parse_args:
  * @argc	argument count
  * @argv	argument array
  *
- * WARNING: may allocate a string in light_conf.ctrl,
+ * WARNING: may allocate a string in light_conf->ctrl,
  *          but will not free it
  *
- * Returns: true on success, false on failure
+ * Returns: a valid conf object on success, NULL on failure
  **/
-bool light_parse_args(int argc, char **argv)
+light_conf_t *parse_args(int argc, char **argv)
 {
 	int opt;
-	int verbosity;
-
+	int verbosity = 0;
+	light_conf_t *light_conf = NULL;
 	char *value = NULL;
+
+	if (!(light_conf = light_new()))
+		return NULL;
 
 	bool opSet = false;
 	bool targetSet = false;
@@ -96,101 +80,97 @@ bool light_parse_args(int argc, char **argv)
 	bool ctrlSet = false;
 	bool valSet = false;
 
-	light_defaults();
-
 	while ((opt = getopt(argc, argv, "HhVGS:A:U:LIObmclkas:prv:")) != -1) {
 		switch (opt) {
 			/* -- Operations -- */
 		case 'H':
 		case 'h':
 			ASSERT_OPSET();
-			light_conf.op_mode = LIGHT_PRINT_HELP;
+			light_conf->op_mode = LIGHT_PRINT_HELP;
 			break;
 		case 'V':
 			ASSERT_OPSET();
-			light_conf.op_mode = LIGHT_PRINT_VERSION;
+			light_conf->op_mode = LIGHT_PRINT_VERSION;
 			break;
 		case 'G':
 			ASSERT_OPSET();
-			light_conf.op_mode = LIGHT_GET;
+			light_conf->op_mode = LIGHT_GET;
 			break;
 		case 'S':
 			ASSERT_OPSET();
-			light_conf.op_mode = LIGHT_SET;
+			light_conf->op_mode = LIGHT_SET;
 			value = optarg;
 			break;
 		case 'A':
 			ASSERT_OPSET();
-			light_conf.op_mode = LIGHT_ADD;
+			light_conf->op_mode = LIGHT_ADD;
 			value = optarg;
 			break;
 		case 'U':
 			ASSERT_OPSET();
-			light_conf.op_mode = LIGHT_SUB;
+			light_conf->op_mode = LIGHT_SUB;
 			value = optarg;
 			break;
 		case 'L':
 			ASSERT_OPSET();
-			light_conf.op_mode = LIGHT_LIST_CTRL;
+			light_conf->op_mode = LIGHT_LIST_CTRL;
 			break;
 		case 'I':
 			ASSERT_OPSET();
-			light_conf.op_mode = LIGHT_RESTORE;
+			light_conf->op_mode = LIGHT_RESTORE;
 			break;
 		case 'O':
 			ASSERT_OPSET();
-			light_conf.op_mode = LIGHT_SAVE;
+			light_conf->op_mode = LIGHT_SAVE;
 			break;
 
 			/* -- Targets -- */
 		case 'l':
 			ASSERT_TARGETSET();
-			light_conf.target = LIGHT_BACKLIGHT;
+			light_conf->target = LIGHT_BACKLIGHT;
 			break;
 		case 'k':
 			ASSERT_TARGETSET();
-			light_conf.target = LIGHT_KEYBOARD;
+			light_conf->target = LIGHT_KEYBOARD;
 			break;
 
 			/* -- Fields -- */
 		case 'b':
 			ASSERT_FIELDSET();
-			light_conf.field = LIGHT_BRIGHTNESS;
+			light_conf->field = LIGHT_BRIGHTNESS;
 			break;
 		case 'm':
 			ASSERT_FIELDSET();
-			light_conf.field = LIGHT_MAX_BRIGHTNESS;
+			light_conf->field = LIGHT_MAX_BRIGHTNESS;
 			break;
 		case 'c':
 			ASSERT_FIELDSET();
-			light_conf.field = LIGHT_MIN_CAP;
+			light_conf->field = LIGHT_MIN_CAP;
 			break;
 
 			/* -- Controller selection -- */
 		case 'a':
 			ASSERT_CTRLSET();
-			light_conf.ctrl_mode = LIGHT_AUTO;
-			break;;
+			break;
 		case 's':
 			ASSERT_CTRLSET();
-			light_conf.ctrl_mode = LIGHT_SPECIFY;
-
 			if (!path_component(optarg)) {
 				fprintf(stderr,
 					"can't handle controller '%s'\n",
 					optarg);
-				return false;
+				light_free(light_conf);
+				return NULL;
 			}
-			light_conf.ctrl = strdup(optarg);
+			light_conf->ctrl = strdup(optarg);
 			break;
 			/* -- Value modes -- */
 		case 'p':
 			ASSERT_VALSET();
-			light_conf.val_mode = LIGHT_PERCENT;
+			light_conf->val_mode = LIGHT_PERCENT;
 			break;
 		case 'r':
 			ASSERT_VALSET();
-			light_conf.val_mode = LIGHT_RAW;
+			light_conf->val_mode = LIGHT_RAW;
 			break;
 
 			/* -- Other -- */
@@ -198,45 +178,44 @@ bool light_parse_args(int argc, char **argv)
 			if (sscanf(optarg, "%i", &verbosity) != 1) {
 				fprintf(stderr,
 					"Verbosity not specified in a recognizable format.\n\n");
-				info_print_help();
-				return false;
+				goto error;
 			}
 			if (verbosity < 0 || verbosity > 3) {
 				fprintf(stderr,
 					"Verbosity has to be between 0 and 3.\n\n");
-				info_print_help();
-				return false;
+				goto error;
 			}
-			light_loglevel = (light_loglevel_t) verbosity;
 			break;
 		default:
-			info_print_help();
-			return false;
+			goto error;
 		}
 	}
 
-	if (!light_check_ops()) {
-		info_print_help();
-		return false;
-	}
+	if (!parse_check(light_conf->op_mode, light_conf->field))
+		goto error;
+
+	light_loglevel = (light_loglevel_t) verbosity;
 
 	/* Parse <value> (for set/add/subtract operations) */
 	if (value) {
 		int r;
-		if (light_conf.val_mode == LIGHT_PERCENT)
-			r = sscanf(value, "%lf", &light_conf.val_pct);
+		if (light_conf->val_mode == LIGHT_PERCENT)
+			r = sscanf(value, "%lf", &light_conf->val_pct);
 		else
-			r = sscanf(value, "%" SCNu64, &light_conf.val_raw);
+			r = sscanf(value, "%" SCNu64, &light_conf->val_raw);
 
 		if (r != 1) {
 			LIGHT_ERR("<value> not specified in a recognizable format");
-			info_print_help();
-			return false;
+			goto error;
 		}
 
-		if (light_conf.val_mode == LIGHT_PERCENT)
-			light_conf.val_pct = light_clamp_pct(light_conf.val_pct);
+		if (light_conf->val_mode == LIGHT_PERCENT)
+			light_conf->val_pct = light_clamp_pct(light_conf->val_pct);
 	}
 
-	return true;
+	return light_conf;
+error:
+	info_print_help();
+	light_free(light_conf);
+	return NULL;
 }

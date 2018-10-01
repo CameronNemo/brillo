@@ -4,20 +4,20 @@
 #include "exec.h"
 #include "ctrl.h"
 
+#if 0
 /**
  * light_ctrl_check:
  * @controller:	name of controller to check
  *
  * Returns: true if controller is accessible, otherwise false
  **/
-bool light_ctrl_check(char const *controller)
+bool ctrl_check(char const *controller)
 {
 	char *path = NULL;
 
 	/* On auto mode, we need to check if we can read the max brightness value
 	   of the controller for later computation */
-	if (light_conf.ctrl_mode == LIGHT_AUTO ||
-	    light_conf.field == LIGHT_MAX_BRIGHTNESS) {
+	if (light_conf.field == LIGHT_MAX_BRIGHTNESS) {
 		if (!(path = light_path_new(controller, LIGHT_MAX_BRIGHTNESS)))
 			return false;
 
@@ -49,9 +49,10 @@ bool light_ctrl_check(char const *controller)
 	free(path);
 	return true;
 }
+#endif
 
 /**
- * light_ctrl_iter_next:
+ * ctrl_iter_next:
  * @dir:	opened directory to iterate over
  *
  * Iterates over the directory given by dir.
@@ -61,7 +62,7 @@ bool light_ctrl_check(char const *controller)
  *
  * Returns: name of the next controller, NULL on end of dir or failure
  **/
-char *light_ctrl_iter_next(DIR * dir)
+char *ctrl_iter_next(DIR * dir)
 {
 	struct dirent *file;
 
@@ -79,46 +80,50 @@ char *light_ctrl_iter_next(DIR * dir)
 }
 
 /**
- * light_ctrl_auto:
+ * ctrl_auto:
+ * @conf:	configuration object to work on
  *
  * Iterates over the appropriate directory and finds the
- * controller with the highest max brightness.
+ * controller with the highest max brightness. Stores the
+ * name of the controller and the max brightness value in
+ * the configuration object
  *
  * WARNING: will return an allocated string, which
  *          should be freed after use
  *
  * Returns: best controller, or NULL if no suitable controller is found
  **/
-char *light_ctrl_auto()
+bool ctrl_auto(light_conf_t *conf)
 {
 	DIR *dir;
-	char *best, *next;
-
-	best = NULL;
+	char *next, *prev;
 
 	LIGHT_NOTE("finding best controller...");
 
-	if (!(dir = opendir(light_conf.sys_prefix))) {
+	if (!(dir = opendir(conf->sys_prefix))) {
 		LIGHT_ERR("opendir: %s", strerror(errno));
-		return NULL;
+		return false;
 	}
 
-	while ((next = light_ctrl_iter_next(dir))) {
+	while ((next = ctrl_iter_next(dir))) {
 		uint64_t max = 0;
+		prev = conf->ctrl;
+		conf->ctrl = next;
 
-		if (light_ctrl_check(next)
-		    && light_fetch(next, LIGHT_MAX_BRIGHTNESS, &max)) {
-			if (max > light_conf.cached_max) {
-				light_conf.cached_max = max;
-				if (best)
-					free(best);
-				best = next;
-				LIGHT_NOTE("found (better) controller '%s'", best);
+		if (light_fetch(conf, LIGHT_MAX_BRIGHTNESS, &max)) {
+			if (max > conf->cached_max) {
+				LIGHT_NOTE("found (better) controller '%s'", next);
+				conf->cached_max = max;
+				if (prev)
+					free(prev);
 				continue;
+			} else {
+				LIGHT_NOTE("found worse controller '%s'", next);
+				conf->ctrl = prev;
 			}
-			LIGHT_NOTE("found worse controller '%s'", next);
 		} else {
 			LIGHT_WARN("found inaccessible controller '%s'", next);
+			conf->ctrl = prev;
 		}
 
 		free(next);
@@ -126,8 +131,10 @@ char *light_ctrl_auto()
 
 	closedir(dir);
 
-	if (!best)
+	if (!conf->ctrl) {
 		LIGHT_ERR("could not find an accessible controller");
+		return false;
+	}
 
-	return best;
+	return true;
 }

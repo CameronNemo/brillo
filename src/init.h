@@ -1,8 +1,7 @@
 #ifndef INIT_H
 #define INIT_H
 
-bool light_parse_args(int argc, char **argv);
-bool light_initialize(void);
-void light_free(void);
+bool init_strings(light_conf_t *conf);
+void light_free(light_conf_t *conf);
 
 #endif /* INIT_H */

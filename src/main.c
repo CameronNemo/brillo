@@ -1,5 +1,6 @@
 #include <stdlib.h>
 
+#include "light.h"
 #include "helpers.h"
 #include "parse.h"
 #include "init.h"
@@ -9,23 +10,24 @@
 
 int main(int argc, char **argv)
 {
-	if (!light_parse_args(argc, argv)) {
+	light_conf_t *light_conf = NULL;
+
+	if (!(light_conf = parse_args(argc, argv))) {
 		LIGHT_ERR("Arguments parsing failed");
 		return LIGHT_RETURNVAL_INITFAIL;
 	}
 
-	if (!light_initialize()) {
-		light_free();
+	if (!(init_strings(light_conf))) {
 		LIGHT_ERR("Initialization failed");
 		return LIGHT_RETURNVAL_INITFAIL;
 	}
 
-	if (!light_execute()) {
-		light_free();
+	if (!light_execute(light_conf)) {
+		light_free(light_conf);
 		LIGHT_ERR("Execution failed");
 		return EXIT_FAILURE;
 	}
 
-	light_free();
+	light_free(light_conf);
 	return EXIT_SUCCESS;
 }

@@ -8,8 +8,9 @@
 
 /**
  * init_sys:
+ * @tgt:	either "leds" or "backlight"
  *
- * Initializes the sys prefix string.
+ * Initializes the sysfs prefix string.
  *
  * Returns: pointer to allocated prefix, or NULL on failure
  **/
@@ -25,6 +26,7 @@ static char *init_sys(const char *tgt)
 
 /**
  * init_cache:
+ * @tgt:	either "leds" or "backlight"
  *
  * Initializes the cache prefix string,
  * attempts to create the directory.
@@ -65,7 +67,8 @@ static char *init_cache(const char * const tgt)
 }
 
 /**
- * light_initialize:
+ * init_strings:
+ * @conf:	light configuration object to initialize
  *
  * Initializes sys/cache prefixes and controller string.
  *
@@ -74,54 +77,33 @@ static char *init_cache(const char * const tgt)
  *
  * Returns: true on success, false on failure
  **/
-bool light_initialize()
+bool init_strings(light_conf_t *conf)
 {
 	const char *tgt;
 
-	if (light_conf.target == LIGHT_BACKLIGHT)
+	if (conf->target == LIGHT_BACKLIGHT)
 		tgt = "backlight";
-	else if (light_conf.target == LIGHT_KEYBOARD)
+	else if (conf->target == LIGHT_KEYBOARD)
 		tgt = "leds";
 	else
-		return false;
+		goto error;
 
-	if (!(light_conf.sys_prefix = init_sys(tgt)))
-		return false;
+	if (!(conf->sys_prefix = init_sys(tgt)))
+		goto error;
 
 	/* info mode needs no more initialization */
-	if (info_print(false))
+	if (info_print(conf->op_mode, conf->sys_prefix, false))
 		return true;
 
-	if (!(light_conf.cache_prefix = init_cache(tgt)))
-		return false;
+	if (!(conf->cache_prefix = init_cache(tgt)))
+		goto error;
 
 	/* Make sure we have a valid controller before we proceed */
-	if ((light_conf.ctrl_mode == LIGHT_AUTO &&
-	     !(light_conf.ctrl = light_ctrl_auto())) ||
-	    !light_ctrl_check(light_conf.ctrl))
-		return false;
+	if (!conf->ctrl && !ctrl_auto(conf))
+		goto error;
 
 	return true;
-}
-
-/**
- * light_free:
- *
- * Free the string pointers in the light_conf struct.
- **/
-void light_free()
-{
-	char *c;
-
-	c = light_conf.ctrl;
-	if (c)
-		free(c);
-
-	c = light_conf.sys_prefix;
-	if (c)
-		free(c);
-
-	c = light_conf.cache_prefix;
-	if (c)
-		free(c);
+error:
+	light_free(conf);
+	return false;
 }

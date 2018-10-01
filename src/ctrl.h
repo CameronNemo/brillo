@@ -3,8 +3,10 @@
 
 #include <dirent.h>
 
-bool light_ctrl_check(char const *controller);
-char *light_ctrl_iter_next(DIR * dir);
-char *light_ctrl_auto();
+#include "light.h"
+
+//bool ctrl_check(char const *controller);
+char *ctrl_iter_next(DIR * dir);
+bool ctrl_auto(light_conf_t *conf);
 
 #endif /* CTRL_H */

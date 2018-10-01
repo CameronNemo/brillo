@@ -4,10 +4,37 @@
 #include "light.h"
 #include "info.h"
 
-static bool info_list(void);
+/**
+ * info_list:
+ * @prefix:	sysfs prefix to walk through
+ *
+ * Prints controller names in the specified prefix.
+ *
+ * Returns: false if could not list controllers or no
+ *	      controllers found, otherwise true
+ **/
+bool info_list(char *prefix)
+{
+	DIR *dir;
+
+	dir = opendir(prefix);
+
+	if (!dir) {
+		LIGHT_ERR("opendir: %s", strerror(errno));
+		return false;
+	}
+
+	for (char *c; (c = ctrl_iter_next(dir)); free(c))
+		printf("%s\n", c);
+
+	closedir(dir);
+	return true;
+}
 
 /**
  * info_print:
+ * @op:		operation mode to use
+ * @prefix:	sysfs prefix to hand to list controllers
  * @exec:	whether or not to take action
  *
  * If exec is true, prints information
@@ -15,9 +42,9 @@ static bool info_list(void);
  *
  * Returns: true if op_mode is an info mode, otherwise false
  **/
-bool info_print(bool exec)
+bool info_print(LIGHT_OP_MODE op, char *prefix, bool exec)
 {
-	switch (light_conf.op_mode) {
+	switch (op) {
 		case LIGHT_PRINT_HELP:
 			if (exec)
 				info_print_help();
@@ -28,38 +55,12 @@ bool info_print(bool exec)
 			break;
 		case LIGHT_LIST_CTRL:
 			if (exec)
-				info_list();
+				info_list(prefix);
 			break;
 		default:
 			return false;
 	}
 
-	return true;
-}
-
-/**
- * info_list:
- *
- * Prints controller names for the appropriate target.
- *
- * Returns: false if could not list controllers or no
- * 		controllers found, otherwise true
- **/
-bool info_list()
-{
-	DIR *dir;
-
-	dir = opendir(light_conf.sys_prefix);
-
-	if (!dir) {
-		LIGHT_ERR("opendir: %s", strerror(errno));
-		return false;
-	}
-
-	for (char *c; (c = light_ctrl_iter_next(dir)); free(c))
-		printf("%s\n", c);
-
-	closedir(dir);
 	return true;
 }
 

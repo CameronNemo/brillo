@@ -5,6 +5,7 @@
 #include "path.h"
 #include "info.h"
 #include "ctrl.h"
+#include "value.h"
 #include "light.h"
 
 #define ASSERT_SET(t,v) \
@@ -80,7 +81,7 @@ light_conf_t *parse_args(int argc, char **argv)
 	bool ctrlSet = false;
 	bool valSet = false;
 
-	while ((opt = getopt(argc, argv, "HhVGS:A:U:LIObmclkas:prv:")) != -1) {
+	while ((opt = getopt(argc, argv, "HhVGS:A:U:LIObmclkas:pqrv:")) != -1) {
 		switch (opt) {
 			/* -- Operations -- */
 		case 'H':
@@ -168,6 +169,10 @@ light_conf_t *parse_args(int argc, char **argv)
 			ASSERT_VALSET();
 			light_conf->val_mode = LIGHT_PERCENT;
 			break;
+		case 'q':
+			ASSERT_VALSET();
+			light_conf->val_mode = LIGHT_PERCENT_EXPONENTIAL;
+			break;
 		case 'r':
 			ASSERT_VALSET();
 			light_conf->val_mode = LIGHT_RAW;
@@ -199,18 +204,20 @@ light_conf_t *parse_args(int argc, char **argv)
 	/* Parse <value> (for set/add/subtract operations) */
 	if (value) {
 		int r;
-		if (light_conf->val_mode == LIGHT_PERCENT)
-			r = sscanf(value, "%lf", &light_conf->val_pct);
+		double pct = 0.0;
+
+		if (light_conf->val_mode != LIGHT_RAW)
+			r = sscanf(value, "%lf", &pct);
 		else
-			r = sscanf(value, "%" SCNu64, &light_conf->val_raw);
+			r = sscanf(value, "%" SCNu64, &light_conf->value);
 
 		if (r != 1) {
 			LIGHT_ERR("<value> not specified in a recognizable format");
 			goto error;
 		}
 
-		if (light_conf->val_mode == LIGHT_PERCENT)
-			light_conf->val_pct = light_clamp_pct(light_conf->val_pct);
+		if (light_conf->val_mode != LIGHT_RAW)
+			light_conf->value = VALUE_CLAMP_PCT(((uint64_t) pct) * (VALUE_PCT_MAX / 100));
 	}
 
 	return light_conf;

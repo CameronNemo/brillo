@@ -24,8 +24,7 @@ light_conf_t *light_new()
 	conf->cache_prefix = NULL;
 	conf->op_mode = LIGHT_GET;
 	conf->val_mode = LIGHT_PERCENT;
-	conf->val_raw = 0;
-	conf->val_pct = 0.0;
+	conf->value = 0;
 	conf->target = LIGHT_BACKLIGHT;
 	conf->field = LIGHT_BRIGHTNESS;
 	conf->cached_max = 0;

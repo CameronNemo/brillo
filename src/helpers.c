@@ -46,27 +46,3 @@ bool light_read_val(char const *filename, uint64_t *i)
 	fclose(fileHandle);
 	return true;
 }
-
-uint64_t light_log_clamp_min(uint64_t x)
-{
-	LIGHT_NOTE("raising specified value to min: %" SCNu64 " (raw)", x);
-	return x;
-}
-
-uint64_t light_log_clamp_max(uint64_t x)
-{
-	LIGHT_NOTE("lowering specified value to max: %" SCNu64 " (raw)", x);
-	return x;
-}
-
-double light_clamp_pct(double p)
-{
-	if (p < 0.0) {
-		LIGHT_WARN("raising specified value %g%% to 0%%", p);
-		return 0.0;
-	} else if (p > 100.0) {
-		LIGHT_WARN("lowering specified value %g%% to 100%%", p);
-		return 100.0;
-	}
-	return p;
-}

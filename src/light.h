@@ -43,7 +43,8 @@ typedef enum LIGHT_OP_MODE {
 
 typedef enum LIGHT_VAL_MODE {
 	LIGHT_RAW = 0,
-	LIGHT_PERCENT
+	LIGHT_PERCENT,
+	LIGHT_PERCENT_EXPONENTIAL
 } LIGHT_VAL_MODE;
 
 typedef struct {
@@ -53,8 +54,7 @@ typedef struct {
 	char *ctrl;
 	LIGHT_OP_MODE op_mode;
 	LIGHT_VAL_MODE val_mode;
-	uint64_t val_raw;
-	double val_pct;
+	uint64_t value;
 	LIGHT_TARGET target;
 	LIGHT_FIELD field;
 	uint64_t cached_max;

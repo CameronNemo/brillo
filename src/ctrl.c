@@ -4,53 +4,6 @@
 #include "exec.h"
 #include "ctrl.h"
 
-#if 0
-/**
- * light_ctrl_check:
- * @controller:	name of controller to check
- *
- * Returns: true if controller is accessible, otherwise false
- **/
-bool ctrl_check(char const *controller)
-{
-	char *path = NULL;
-
-	/* On auto mode, we need to check if we can read the max brightness value
-	   of the controller for later computation */
-	if (light_conf.field == LIGHT_MAX_BRIGHTNESS) {
-		if (!(path = light_path_new(controller, LIGHT_MAX_BRIGHTNESS)))
-			return false;
-
-		if (access(path, R_OK) != 0) {
-			LIGHT_WARN("access '%s': %s", path, strerror(errno));
-			free(path);
-			return false;
-		}
-
-		free(path);
-	}
-
-	if (!(path = light_path_new(controller, LIGHT_BRIGHTNESS)))
-		return false;
-
-	if (light_conf.op_mode != LIGHT_GET &&
-	    light_conf.op_mode != LIGHT_SAVE &&
-	    light_conf.field != LIGHT_MIN_CAP &&
-	    (access(path, W_OK) != 0)) {
-		LIGHT_WARN("access '%s': %s", path, strerror(errno));
-		free(path);
-		return false;
-	} else if (access(path, R_OK) != 0) {
-		LIGHT_WARN("access '%s': %s", path, strerror(errno));
-		free(path);
-		return false;
-	}
-
-	free(path);
-	return true;
-}
-#endif
-
 /**
  * ctrl_iter_next:
  * @dir:	opened directory to iterate over

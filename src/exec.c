@@ -2,6 +2,7 @@
 #include "path.h"
 #include "info.h"
 #include "light.h"
+#include "value.h"
 #include "exec.h"
 
 static bool exec_fetch_mincap(light_conf_t *conf, uint64_t *mincap);
@@ -70,24 +71,20 @@ static bool exec_init(light_conf_t *conf,
 static bool exec_get(LIGHT_FIELD field, LIGHT_VAL_MODE mode,
 		uint64_t curr, uint64_t max, uint64_t mincap)
 {
-	uint64_t raw;
-	double pct;
+	uint64_t val;
 
 	if (max == 0)
 		return false;
 
 	switch (field) {
 	case LIGHT_BRIGHTNESS:
-		raw = curr;
-		pct = light_clamp_pct(((double)curr) / ((double)max) * 100);
+		val = value_from_raw(mode, curr, max);
 		break;
 	case LIGHT_MAX_BRIGHTNESS:
-		raw = max;
-		pct = 100.00;
+		val = value_from_raw(mode, max, max);
 		break;
 	case LIGHT_MIN_CAP:
-		raw = mincap;
-		pct = light_clamp_pct(((double)mincap) / ((double)max) * 100);
+		val = value_from_raw(mode, mincap, max);
 		break;
 	case LIGHT_SAVERESTORE:
 		return true;
@@ -96,9 +93,9 @@ static bool exec_get(LIGHT_FIELD field, LIGHT_VAL_MODE mode,
 	}
 
 	if (mode == LIGHT_RAW)
-		printf("%" SCNu64 "\n", raw);
+		printf("%" SCNu64 "\n", val);
 	else
-		printf("%.2f\n", pct);
+		printf("%.2f\n", ((double) val / 100.00));
 
 	return true;
 }
@@ -117,12 +114,9 @@ static bool exec_get(LIGHT_FIELD field, LIGHT_VAL_MODE mode,
 static bool exec_set(light_conf_t *conf,
 		uint64_t curr, uint64_t max, uint64_t mincap)
 {
-	uint64_t val;
+	uint64_t val = conf->value;
 
-	if (conf->val_mode == LIGHT_RAW)
-		val = conf->val_raw;
-	else
-		val = (uint64_t)((conf->val_pct * ((double)max)) / 100.0);
+	curr = value_from_raw(conf->val_mode, curr, max);
 
 	if (conf->field == LIGHT_BRIGHTNESS) {
 		switch (conf->op_mode) {
@@ -145,7 +139,9 @@ static bool exec_set(light_conf_t *conf,
 		return false;
 	}
 
-	val = LIGHT_CLAMP(val, mincap, max);
+	val = value_to_raw(conf->val_mode, val, max);
+
+	val = value_clamp(val, mincap, max);
 	return exec_set_field (conf, conf->field, val);
 }
 
@@ -185,9 +181,9 @@ bool light_execute(light_conf_t *conf)
 	default:
 		/* Should not be reached */
 		fprintf(stderr,
-			"Controller: %s\nValueRaw: %" SCNu64 "\nValuePercent: %.2f\nOpMode: %u\nValMode: %u\nField: %u\n\n",
-			conf->ctrl, conf->val_raw, conf->val_pct,
-			conf->op_mode, conf->val_mode, conf->field);
+			"Controller: %s\nValue: %" SCNu64 "\nOpMode: %u\nValMode: %u\nField: %u\n\n",
+			conf->ctrl, conf->value, conf->op_mode,
+			conf->val_mode, conf->field);
 		fprintf(stderr,
 			"Invalid combination of commandline arguments.\n");
 		info_print_help();

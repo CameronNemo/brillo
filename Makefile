@@ -7,6 +7,7 @@ ifeq ($(PREFIX),)
 endif
 
 CFLAGS := -std=c99 -D_XOPEN_SOURCE=700 -pedantic -Wall -Werror $(CFLAGS)
+LDLIBS := $(LDLIBS) -lm
 
 MANPROG=./$(PROG)
 
@@ -20,8 +21,8 @@ MANFLAGS=-h -h -v -V -N -s 1 -n "$(DESC)"
 
 HELP2MAN := $(shell which help2man 2>/dev/null)
 
-brillo: src/light.c src/helpers.c src/parse.c src/path.c src/ctrl.c src/info.c src/init.c src/exec.c src/main.c
-	$(CC) $(CFLAGS) -g -o $@ $^
+brillo: src/value.c src/light.c src/helpers.c src/parse.c src/path.c src/ctrl.c src/info.c src/init.c src/exec.c src/main.c
+	$(CC) $(CFLAGS) $(LDLIBS) -o $@ $^
 
 install:
 	install -dZ -m 755 $(BINDIR)

@@ -115,9 +115,11 @@ void info_print_help()
 
 	printf("Value modes (can not be used in conjunction):\n");
 	printf
-	    ("  -p:\t\tInterpret <value> as, and output values in, percent. (default)\n");
+	    ("  -p:\t\tInterpret and output values as linear percentages (default).\n");
 	printf
-	    ("  -r:\t\tInterpret <value> as, and output values in, raw mode.\n\n");
+	    ("  -q:\t\tInterpret and output values as exponential percentages.\n");
+	printf
+	    ("  -r:\t\tInterpret and output values as they are reported by the kernel.\n\n");
 
 	printf("Other:\n");
 	printf

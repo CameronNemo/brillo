@@ -178,6 +178,8 @@ See Also
 
 [ddcutil](http://www.ddcutil.com/): designed to control brightness and color correction for external monitors
 
+[ddcci-driver-linux](https://gitlab.com/ddcci-driver-linux/ddcci-driver-linux): exposes external monitor brightness in sysfs, so it can be used by `brillo` and similar programs
+
 Copyright
 ---------
 

@@ -217,7 +217,7 @@ light_conf_t *parse_args(int argc, char **argv)
 		}
 
 		if (light_conf->val_mode != LIGHT_RAW)
-			light_conf->value = VALUE_CLAMP_PCT(((uint64_t) pct) * (VALUE_PCT_MAX / 100));
+			light_conf->value = VALUE_CLAMP_PCT((uint64_t) (pct * (VALUE_PCT_MAX / 100)));
 	}
 
 	return light_conf;

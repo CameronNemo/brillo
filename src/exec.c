@@ -114,21 +114,25 @@ static bool exec_get(LIGHT_FIELD field, LIGHT_VAL_MODE mode,
 static bool exec_set(light_conf_t *conf,
 		uint64_t curr, uint64_t max, uint64_t mincap)
 {
-	uint64_t val = conf->value;
+	uint64_t specified_value, current_value, new_raw_value;
 
-	curr = value_from_raw(conf->val_mode, curr, max);
+	specified_value = conf->value;
+	current_value = value_from_raw(conf->val_mode, curr, max);
+
+	LIGHT_NOTE("specified value: %" SCNu64, specified_value);
+	LIGHT_NOTE("current value: %" SCNu64, current_value);
 
 	if (conf->field == LIGHT_BRIGHTNESS) {
 		switch (conf->op_mode) {
 		case LIGHT_SUB:
 			/* val is unsigned so we need to get back to >= 0 */
-			if (val > curr)
-				val = -curr;
+			if (specified_value > current_value)
+				specified_value = -current_value;
 			else
-				val = -val;
+				specified_value = -specified_value;
 			/* FALLTHRU */
 		case LIGHT_ADD:
-			val += curr;
+			specified_value += current_value;
 			break;
 		case LIGHT_SET:
 			break;
@@ -139,10 +143,13 @@ static bool exec_set(light_conf_t *conf,
 		return false;
 	}
 
-	val = value_to_raw(conf->val_mode, val, max);
+	new_raw_value = value_to_raw(conf->val_mode, specified_value, max);
+	/* Force any increment to result in some change, however small */
+	if (conf->op_mode == LIGHT_ADD && new_raw_value <= curr)
+		new_raw_value += 1;
+	new_raw_value = value_clamp(new_raw_value, mincap, max);
 
-	val = value_clamp(val, mincap, max);
-	return exec_set_field (conf, conf->field, val);
+	return exec_set_field (conf, conf->field, new_raw_value);
 }
 
 /**

@@ -9,30 +9,26 @@ endif
 CFLAGS := -std=c99 -D_XOPEN_SOURCE=700 -pedantic -Wall -Werror $(CFLAGS)
 LDLIBS := $(LDLIBS) -lm
 
-MANPROG=./$(PROG)
-
 BINDIR=$(DESTDIR)$(PREFIX)/bin
 MANDIR=$(DESTDIR)$(PREFIX)/share/man/man1
 PKEDIR=$(DESTDIR)$(PREFIX)/share/polkit-1/actions
 UDEVDIR=$(DESTDIR)$(PREFIX)/lib/udev/rules.d
 AADIR=$(DESTDIR)/etc/apparmor.d
 
-MANFLAGS=-h -h -v -V -N -s 1 -n "$(DESC)"
-
-HELP2MAN := $(shell which help2man 2>/dev/null)
+GOMD2MAN := $(shell which go-md2man 2>/dev/null)
 
 brillo: src/value.c src/light.c src/helpers.c src/parse.c src/path.c src/ctrl.c src/info.c src/init.c src/exec.c src/main.c
 	$(CC) $(CFLAGS) $(LDLIBS) -o $@ $^
 
-install:
+install: brillo
 	install -dZ -m 755 $(BINDIR)
 	install -DZ -m 755 ./$(PROG) -t $(BINDIR)
 
-man: brillo
-ifndef HELP2MAN
-$(error "help2man not available")
+man:
+ifndef GOMD2MAN
+$(error "go-md2man not available")
 endif
-	$(HELP2MAN) $(MANFLAGS) -o $(PROG).1 $(MANPROG)
+	$(GOMD2MAN) -in doc/man/brillo.1.md -out $(PROG).1
 
 polkit:
 	sed 's|@bindir@|$(PREFIX)/bin|g;s|@prog@|$(PROG)|g;s|@vendor@|$(VENDOR)|g;s|@desc@|$(DESC)|g' contrib/polkit.in >contrib/$(VENDOR).$(PROG).policy

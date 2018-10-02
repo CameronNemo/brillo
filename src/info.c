@@ -71,14 +71,7 @@ bool info_print(LIGHT_OP_MODE op, char *prefix, bool exec)
  **/
 void info_print_version()
 {
-	printf("%s %u.%u (%s)\n", LIGHT_PROG, LIGHT_VER_MAJOR, LIGHT_VER_MINOR,
-	       LIGHT_VER_TYPE);
-	printf("Copyright (C) %u %s, ", LIGHT_VENDOR_YEAR, LIGHT_VENDOR);
-	printf("%u %s\n", LIGHT_YEAR, LIGHT_AUTHOR);
-	printf
-	    ("This is free software, see the source for copying conditions.  There is NO\n");
-	printf
-	    ("warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE\n");
+	printf("%s %s\n", LIGHT_PROG, LIGHT_VER);
 }
 
 /**
@@ -88,40 +81,5 @@ void info_print_version()
  **/
 void info_print_help()
 {
-	printf("Usage: %s [operation] [value] [-k] [-r] [-m|-c] [-s controller] [-v loglevel]\n", LIGHT_PROG);
-	printf("Operations (can not be used in conjunction):\n");
-	printf("  -H -h:\tPrints this help and exits\n");
-	printf("  -V:\t\tPrints version info and exits\n");
-	printf("  -G:\t\tGet value (default)\n");
-	printf("  -S:\t\tSet value\n");
-	printf("  -A:\t\tAdd value\n");
-	printf("  -U:\t\tSubtract value\n");
-	printf("  -L:\t\tList controllers\n");
-	printf("  -I:\t\tRestore brightness\n");
-	printf("  -O:\t\tSave brightness\n\n");
-
-	printf("Targets (can not be used in conjunction):\n");
-	printf("  -l:\t\tAct on screen backlight (default)\n");
-	printf("  -k:\t\tAct on keyboard backlight\n\n");
-
-	printf("Fields (can not be used in conjunction):\n");
-	printf("  -b:\t\tBrightness (default) (used with [GSAU])\n");
-	printf("  -m:\t\tMaximum brightness (used with [G])\n");
-	printf("  -c:\t\tMinimum cap (used with [GS])\n\n");
-
-	printf("Controller selection (can not be used in conjunction):\n");
-	printf("  -a:\t\tSelects controller automatically (default).\n");
-	printf("  -s:\t\tSpecify controller to use. (needs argument)\n\n");
-
-	printf("Value modes (can not be used in conjunction):\n");
-	printf
-	    ("  -p:\t\tInterpret and output values as linear percentages (default).\n");
-	printf
-	    ("  -q:\t\tInterpret and output values as exponential percentages.\n");
-	printf
-	    ("  -r:\t\tInterpret and output values as they are reported by the kernel.\n\n");
-
-	printf("Other:\n");
-	printf
-	    ("  -v:\t\tSets the verbosity level, (needs argument).\n  \t\t0: Only outputs read values.\n  \t\t1: Read values, Errors.\n  \t\t2: Read values, Errors, Warnings.\n  \t\t3: Read values, Errors, Warnings, Notices.\n\n");
+	printf("Usage: %s [operation [val]] [-k] [-q|-r] [-m|-c] [-s ctrl] [-v loglevel]\n", LIGHT_PROG);
 }

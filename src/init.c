@@ -1,6 +1,7 @@
 #include <sys/stat.h>
 
 #include "common.h"
+#include "log.h"
 #include "path.h"
 #include "info.h"
 #include "ctrl.h"

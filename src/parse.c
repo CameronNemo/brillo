@@ -1,7 +1,7 @@
 #include <getopt.h>
 
 #include "common.h"
-#include "helpers.h"
+#include "log.h"
 #include "path.h"
 #include "info.h"
 #include "ctrl.h"
@@ -81,7 +81,7 @@ light_conf_t *parse_args(int argc, char **argv)
 	bool ctrlSet = false;
 	bool valSet = false;
 
-	while ((opt = getopt(argc, argv, "HhVGS:A:U:LIObmclkas:pqrv:")) != -1) {
+	while ((opt = getopt(argc, argv, "HhVGS:A:U:LIObmclkas:pqrv:u:")) != -1) {
 		switch (opt) {
 			/* -- Operations -- */
 		case 'H':
@@ -191,6 +191,12 @@ light_conf_t *parse_args(int argc, char **argv)
 				goto error;
 			}
 			break;
+		case 'u':
+			if (sscanf(optarg, "%" SCNd64, &light_conf->usec) != 1) {
+				LIGHT_ERR("microseconds argument not recognized");
+				goto error;
+			}
+			break;
 		default:
 			goto error;
 		}
@@ -209,7 +215,7 @@ light_conf_t *parse_args(int argc, char **argv)
 		if (light_conf->val_mode != LIGHT_RAW)
 			r = sscanf(value, "%lf", &pct);
 		else
-			r = sscanf(value, "%" SCNu64, &light_conf->value);
+			r = sscanf(value, "%" SCNd64, &light_conf->value);
 
 		if (r != 1) {
 			LIGHT_ERR("<value> not specified in a recognizable format");
@@ -217,7 +223,7 @@ light_conf_t *parse_args(int argc, char **argv)
 		}
 
 		if (light_conf->val_mode != LIGHT_RAW)
-			light_conf->value = VALUE_CLAMP_PCT((uint64_t) (pct * (VALUE_PCT_MAX / 100)));
+			light_conf->value = VALUE_CLAMP_PCT((int64_t) (pct * (VALUE_PCT_MAX / 100)));
 	}
 
 	return light_conf;

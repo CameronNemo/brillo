@@ -1,5 +1,5 @@
 #include "common.h"
-#include "helpers.h"
+#include "log.h"
 #include "light.h"
 #include "exec.h"
 #include "ctrl.h"
@@ -59,11 +59,11 @@ bool ctrl_auto(light_conf_t *conf)
 	}
 
 	while ((next = ctrl_iter_next(dir))) {
-		uint64_t max = 0;
+		int64_t max = 0;
 		prev = conf->ctrl;
 		conf->ctrl = next;
 
-		if (light_fetch(conf, LIGHT_MAX_BRIGHTNESS, &max)) {
+		if ((max = light_fetch(conf, LIGHT_MAX_BRIGHTNESS)) > 0) {
 			if (max > conf->cached_max) {
 				LIGHT_NOTE("found (better) controller '%s'", next);
 				conf->cached_max = max;

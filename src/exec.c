@@ -1,15 +1,15 @@
 #include "common.h"
+#include "log.h"
 #include "path.h"
 #include "info.h"
 #include "light.h"
 #include "value.h"
+#include "file.h"
 #include "exec.h"
 
-static bool exec_fetch_mincap(light_conf_t *conf, uint64_t *mincap);
-static bool exec_set_field(light_conf_t *conf, LIGHT_FIELD field, uint64_t v);
-//static bool exec_set(uint64_t curr, uint64_t max, uint64_t mincap);
+static int64_t exec_fetch_mincap(light_conf_t *conf);
+static bool exec_set_field(light_conf_t *conf, LIGHT_FIELD field, int64_t val_old, int64_t val_new);
 static bool exec_restore(light_conf_t *conf);
-//static bool exec_init(uint64_t * curr, uint64_t * max, uint64_t * mincap);
 
 /**
  * exec_init:
@@ -19,11 +19,11 @@ static bool exec_restore(light_conf_t *conf);
  * Returns: true on success, false on failure
  **/
 static bool exec_init(light_conf_t *conf,
-		uint64_t * curr, uint64_t * max, uint64_t * mincap)
+		int64_t * curr, int64_t * max, int64_t * mincap)
 {
 	if (conf->cached_max != 0) {
 		*max = conf->cached_max;
-	} else if (!light_fetch(conf, LIGHT_MAX_BRIGHTNESS, max)) {
+	} else if ((*max = light_fetch(conf, LIGHT_MAX_BRIGHTNESS)) < 0) {
 		LIGHT_ERR("could not get max brightness");
 		return false;
 	}
@@ -37,19 +37,19 @@ static bool exec_init(light_conf_t *conf,
 		return true;
 	}
 
-	if (!light_fetch(conf, LIGHT_BRIGHTNESS, curr)) {
+	if ((*curr = light_fetch(conf, LIGHT_BRIGHTNESS)) < 0) {
 		LIGHT_ERR("could not get brightness");
 		return false;
 	}
 
-	if (!exec_fetch_mincap(conf, mincap)) {
+	if ((*mincap = exec_fetch_mincap(conf)) < 0) {
 		LIGHT_ERR("could not get mincap");
 		return false;
 	}
 
 	if (*mincap > *max) {
-		LIGHT_ERR("invalid mincap value of '%" SCNu64 "'", *mincap);
-		LIGHT_ERR("mincap must be inferior to '%" SCNu64 "'", *max);
+		LIGHT_ERR("invalid mincap value of '%" PRId64 "'", *mincap);
+		LIGHT_ERR("mincap must be inferior to '%" PRId64 "'", *max);
 		return false;
 	}
 
@@ -69,9 +69,9 @@ static bool exec_init(light_conf_t *conf,
  * Returns: true on success, false on failure
  **/
 static bool exec_get(LIGHT_FIELD field, LIGHT_VAL_MODE mode,
-		uint64_t curr, uint64_t max, uint64_t mincap)
+		int64_t curr, int64_t max, int64_t mincap)
 {
-	uint64_t val;
+	int64_t val;
 
 	if (max == 0)
 		return false;
@@ -93,7 +93,7 @@ static bool exec_get(LIGHT_FIELD field, LIGHT_VAL_MODE mode,
 	}
 
 	if (mode == LIGHT_RAW)
-		printf("%" SCNu64 "\n", val);
+		printf("%" PRId64 "\n", val);
 	else
 		printf("%.2f\n", ((double) val / 100.00));
 
@@ -112,15 +112,15 @@ static bool exec_get(LIGHT_FIELD field, LIGHT_VAL_MODE mode,
  * Returns: true on success, false on failure
  **/
 static bool exec_set(light_conf_t *conf,
-		uint64_t curr, uint64_t max, uint64_t mincap)
+		int64_t curr, int64_t max, int64_t mincap)
 {
-	uint64_t specified_value, current_value, new_raw_value;
+	int64_t specified_value, current_value, new_raw_value;
 
 	specified_value = conf->value;
 	current_value = value_from_raw(conf->val_mode, curr, max);
 
-	LIGHT_NOTE("specified value: %" SCNu64, specified_value);
-	LIGHT_NOTE("current value: %" SCNu64, current_value);
+	LIGHT_NOTE("specified value: %" PRId64, specified_value);
+	LIGHT_NOTE("current value: %" PRId64, current_value);
 
 	if (conf->field == LIGHT_BRIGHTNESS) {
 		switch (conf->op_mode) {
@@ -149,7 +149,7 @@ static bool exec_set(light_conf_t *conf,
 		new_raw_value += 1;
 	new_raw_value = value_clamp(new_raw_value, mincap, max);
 
-	return exec_set_field (conf, conf->field, new_raw_value);
+	return exec_set_field (conf, conf->field, curr, new_raw_value);
 }
 
 /**
@@ -162,9 +162,9 @@ static bool exec_set(light_conf_t *conf,
  **/
 bool light_execute(light_conf_t *conf)
 {
-	uint64_t curr;	/* The current brightness, in raw units */
-	uint64_t max;	/* The max brightness, in raw units */
-	uint64_t mincap;	/* The minimum cap, in raw units */
+	int64_t curr;	/* The current brightness, in raw units */
+	int64_t max;	/* The max brightness, in raw units */
+	int64_t mincap;	/* The minimum cap, in raw units */
 
 	if (info_print(conf->op_mode, conf->sys_prefix, false))
 		return info_print(conf->op_mode, conf->sys_prefix, true);
@@ -178,7 +178,7 @@ bool light_execute(light_conf_t *conf)
 	case LIGHT_GET:
 		return exec_get(conf->field, conf->val_mode, curr, max, mincap);
 	case LIGHT_SAVE:
-		return exec_set_field(conf, LIGHT_SAVERESTORE, curr);
+		return exec_set_field(conf, LIGHT_SAVERESTORE, curr, curr);
 	case LIGHT_RESTORE:
 		return exec_restore(conf);
 	case LIGHT_SET:
@@ -188,7 +188,7 @@ bool light_execute(light_conf_t *conf)
 	default:
 		/* Should not be reached */
 		fprintf(stderr,
-			"Controller: %s\nValue: %" SCNu64 "\nOpMode: %u\nValMode: %u\nField: %u\n\n",
+			"Controller: %s\nValue: %" PRId64 "\nOpMode: %u\nValMode: %u\nField: %u\n\n",
 			conf->ctrl, conf->value, conf->op_mode,
 			conf->val_mode, conf->field);
 		fprintf(stderr,
@@ -253,48 +253,55 @@ char *light_path_new(light_conf_t *conf, LIGHT_FIELD type)
  * light_fetch:
  * @conf:	configuration object to fetch from
  * @field:	field to fetch value from
- * @v:		pointer to store value in
  *
  * Fetches value from the appropriate path.
  *
- * Returns: true if value is successfully read, otherwise false
+ * Returns: value on success, -errno on failure
  **/
-bool light_fetch(light_conf_t *conf, LIGHT_FIELD field, uint64_t *v)
+int64_t light_fetch(light_conf_t *conf, LIGHT_FIELD field)
 {
 	char *path;
-	bool r;
+	int64_t ret;
 
 	if (!(path = light_path_new(conf, field)))
-		return false;
+		return -ENOMEM;
 
 	LIGHT_NOTE("fetching value from '%s'", path);
 
-	r = light_read_val(path, v);
+	ret = file_read(path);
 	free(path);
-	return r;
+	return ret;
 }
 
 /**
  * exec_set_field:
  * @conf:	configuration object to operate on
  * @field:	field to write value into
- * @v:		new value
+ * @val_old:	old value
+ * @val_new:	new value
  *
  * Sets a value for a given controller and field.
  *
  * Returns: true if write was successful, otherwise false
  **/
-static bool exec_set_field(light_conf_t *conf, LIGHT_FIELD field, uint64_t v)
+static bool exec_set_field(light_conf_t *conf, LIGHT_FIELD field,
+		int64_t val_old, int64_t val_new)
 {
 	char *path;
 	bool r;
 
+	/* sanity check */
+	if (field != LIGHT_BRIGHTNESS && conf->usec != 0) {
+		LIGHT_WARN("Resetting time to zero for non-brightness field");
+		conf->usec = 0;
+	}
+
 	if (!(path = light_path_new(conf, field)))
 		return false;
 
-	LIGHT_NOTE("writing value %" SCNu64 " (raw) to '%s'", v, path);
+	LIGHT_NOTE("writing value %" PRId64 " (raw) to '%s'", val_new, path);
 
-	r = light_write_val(path, v);
+	r = file_write(path, val_old, val_new, conf->usec);
 	free(path);
 
 	if (!r) {
@@ -307,17 +314,18 @@ static bool exec_set_field(light_conf_t *conf, LIGHT_FIELD field, uint64_t v)
 /**
  * exec_fetch_mincap:
  * @conf:	configuration object to operate on
- * @mincap:	pointer to store the minimum cap value
  *
- * Returns: false if could not determine minimum cap, otherwise true
+ * Returns: the mincap if it is available, otherwise 0
  **/
-static bool exec_fetch_mincap(light_conf_t *conf, uint64_t *mincap)
+static int64_t exec_fetch_mincap(light_conf_t *conf)
 {
-	if (light_fetch(conf, LIGHT_MIN_CAP, mincap))
-		return true;
+	int64_t mincap;
+
+	if ((mincap = light_fetch(conf, LIGHT_MIN_CAP)) >= 0)
+		return mincap;
+
 	LIGHT_NOTE("can't access mincap file, assuming no min");
-	*mincap = 0;
-	return true;
+	return 0;
 }
 
 /**
@@ -330,16 +338,16 @@ static bool exec_fetch_mincap(light_conf_t *conf, uint64_t *mincap)
  **/
 static bool exec_restore(light_conf_t *conf)
 {
-	uint64_t v = 0;
+	int64_t val = 0;
 
 	LIGHT_NOTE("restoring brightness from saved file");
 
-	if (!light_fetch(conf, LIGHT_SAVERESTORE, &v)) {
+	if ((val = light_fetch(conf, LIGHT_SAVERESTORE)) < 0) {
 		LIGHT_ERR("could not read saved value");
 		return false;
 	}
 
-	if (!exec_set_field(conf, LIGHT_BRIGHTNESS, v)) {
+	if (!exec_set_field(conf, LIGHT_BRIGHTNESS, val, val)) {
 		LIGHT_ERR("could not set restored brightness");
 		return false;
 	}

@@ -1,7 +1,7 @@
 #include <math.h>
 
 #include "value.h"
-#include "helpers.h"
+#include "log.h"
 
 /**
  * value_clamp:
@@ -11,13 +11,13 @@
  *
  * Returns: clamped value
  **/
-uint64_t value_clamp(uint64_t val, uint64_t min, uint64_t max)
+int64_t value_clamp(int64_t val, int64_t min, int64_t max)
 {
 	if (val < min) {
-		LIGHT_WARN("Raising value '%" SCNu64 "' to '%" SCNu64 "'", val, min);
+		LIGHT_WARN("Raising value '%" PRId64 "' to '%" PRId64 "'", val, min);
 		return min;
 	} else if (val > max) {
-		LIGHT_WARN("Lowering value '%" SCNu64 "' to '%" SCNu64 "'", val, max);
+		LIGHT_WARN("Lowering value '%" PRId64 "' to '%" PRId64 "'", val, max);
 		return max;
 	} else {
 		return val;
@@ -33,9 +33,9 @@ uint64_t value_clamp(uint64_t val, uint64_t min, uint64_t max)
  *
  * Returns: the percentage.
  **/
-static uint64_t value_log_pct(uint64_t raw, uint64_t max)
+static int64_t value_log_pct(int64_t raw, int64_t max)
 {
-	return (uint64_t) ((log((double) raw) / log((double) max)) * VALUE_PCT_MAX);
+	return (int64_t) ((log((double) raw) / log((double) max)) * VALUE_PCT_MAX);
 }
 
 /**
@@ -48,7 +48,7 @@ static uint64_t value_log_pct(uint64_t raw, uint64_t max)
  *
  * Returns: the percentage, or a negative value on error
  **/
-uint64_t value_from_raw(LIGHT_VAL_MODE mode, uint64_t raw, uint64_t max)
+int64_t value_from_raw(LIGHT_VAL_MODE mode, int64_t raw, int64_t max)
 {
 	if (mode == LIGHT_RAW) {
 		return raw;
@@ -68,9 +68,9 @@ uint64_t value_from_raw(LIGHT_VAL_MODE mode, uint64_t raw, uint64_t max)
  *
  * Returns: a raw value from a logarithmic percentage.
  **/
-static uint64_t value_exp_raw(uint64_t val, uint64_t max)
+static int64_t value_exp_raw(int64_t val, int64_t max)
 {
-	return (uint64_t) (exp((double) val * log((double) max) / VALUE_PCT_MAX));
+	return (int64_t) (exp((double) val * log((double) max) / VALUE_PCT_MAX));
 }
 
 /**
@@ -83,14 +83,14 @@ static uint64_t value_exp_raw(uint64_t val, uint64_t max)
  *
  * Returns: the raw value
  **/
-uint64_t value_to_raw(LIGHT_VAL_MODE mode, uint64_t val, uint64_t max)
+int64_t value_to_raw(LIGHT_VAL_MODE mode, int64_t val, int64_t max)
 {
 	if (mode == LIGHT_RAW) {
 		return val;
 	} else if (mode == LIGHT_PERCENT) {
 		return ((val * max) / VALUE_PCT_MAX);
 	} else if (mode == LIGHT_PERCENT_EXPONENTIAL) {
-		uint64_t value = value_exp_raw(val, max);
+		int64_t value = value_exp_raw(val, max);
 		/* Protect against getting stuck in the sunken place --
 		 * if the brightness is too low, future increments may not
 		 * be enough to increase the percentage above zero. */

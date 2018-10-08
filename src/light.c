@@ -1,7 +1,9 @@
 #include <stdlib.h>
+#include <errno.h>
+#include <string.h>
 
 #include "light.h"
-#include "helpers.h"
+#include "log.h"
 
 /**
  * light_new:
@@ -14,8 +16,10 @@ light_conf_t *light_new()
 {
 	light_conf_t *conf = NULL;
 
+	errno = 0;
 	if (!(conf = malloc(sizeof(light_conf_t)))) {
-		LIGHT_MEMERR();
+		LIGHT_ERR("malloc: %s", strerror(errno));
+		errno = 0;
 		return NULL;
 	}
 
@@ -24,9 +28,10 @@ light_conf_t *light_new()
 	conf->cache_prefix = NULL;
 	conf->op_mode = LIGHT_GET;
 	conf->val_mode = LIGHT_PERCENT;
-	conf->value = 0;
 	conf->target = LIGHT_BACKLIGHT;
 	conf->field = LIGHT_BRIGHTNESS;
+	conf->value = 0;
+	conf->usec = 0;
 	conf->cached_max = 0;
 
 	return conf;

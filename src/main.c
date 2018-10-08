@@ -1,7 +1,7 @@
 #include <stdlib.h>
 
 #include "light.h"
-#include "helpers.h"
+#include "log.h"
 #include "parse.h"
 #include "init.h"
 #include "exec.h"

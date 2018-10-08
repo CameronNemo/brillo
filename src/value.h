@@ -7,9 +7,9 @@
 
 #define VALUE_PCT_MAX 10000
 
-uint64_t value_clamp(uint64_t val, uint64_t min, uint64_t max);
-uint64_t value_from_raw(LIGHT_VAL_MODE mode, uint64_t raw, uint64_t max);
-uint64_t value_to_raw(LIGHT_VAL_MODE mode, uint64_t val, uint64_t max);
+int64_t value_clamp(int64_t val, int64_t min, int64_t max);
+int64_t value_from_raw(LIGHT_VAL_MODE mode, int64_t raw, int64_t max);
+int64_t value_to_raw(LIGHT_VAL_MODE mode, int64_t val, int64_t max);
 
 #define VALUE_CLAMP_PCT(val) value_clamp(val, 0, VALUE_PCT_MAX)
 

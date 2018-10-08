@@ -5,7 +5,7 @@
 brillo - Backlight and Keyboard LED control tool
 
 # SYNOPSIS
-**brillo** [**operation** [*val*]] [**-k**] [**-q**|**-r**] [**-m**|**-c**] [**-s** *ctrl*] [**-v** *loglevel*]
+**brillo** [**operation** [*value*]] [**-k**] [**-q**|**-r**] [**-m**|**-c**] [**-s** *ctrl*] [**-u** *usecs*] [**-v** *loglevel*]
 
 # DESCRIPTION
 
@@ -78,6 +78,14 @@ such as for keyboard controllers.
 * **-p**:	Linear percentages (default)
 * **-q**:	Logarithmic percentages
 * **-r**:	Raw values
+
+*Smooth adjustment*
+
+**brillo** is capable of gradually adjusting the brightness over a specified
+time period. Use the **-u** *microseconds* option to specify how long the operation
+should take. This flag is silently ignored when not setting the brightness.
+
+* **-u** *microseconds*:	microseconds used to space the operation out
 
 *Verbosity*
 

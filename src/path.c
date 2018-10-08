@@ -2,7 +2,7 @@
 #include <linux/limits.h>
 
 #include "common.h"
-#include "helpers.h"
+#include "log.h"
 
 /**
  * path_component:
@@ -27,8 +27,10 @@ char *path_new()
 {
 	char *p;
 
+	errno = 0;
 	if (!(p = malloc(PATH_MAX))) {
-		LIGHT_MEMERR();
+		LIGHT_ERR("malloc: %s", strerror(errno));
+		errno = 0;
 		return NULL;
 	}
 

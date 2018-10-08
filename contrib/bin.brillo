@@ -20,6 +20,6 @@ profile @{BRILLO} @{BRILLO_EXEC} {
   owner @{HOME}/.cache/@{BRILLO}/** rw,
 
   /sys/class/{backlight,leds}/   r,
-  /sys/devices/**/brightness     rw,
+  /sys/devices/**/brightness     rwk,
   /sys/devices/**/max_brightness r,
 }

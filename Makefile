@@ -17,7 +17,7 @@ AADIR=$(DESTDIR)/etc/apparmor.d
 
 GOMD2MAN := $(shell which go-md2man 2>/dev/null)
 
-brillo: src/value.c src/light.c src/helpers.c src/parse.c src/path.c src/ctrl.c src/info.c src/init.c src/exec.c src/main.c
+brillo: src/value.c src/light.c src/file.c src/parse.c src/path.c src/ctrl.c src/info.c src/init.c src/exec.c src/main.c
 	$(CC) $(CFLAGS) $(LDLIBS) -o $@ $^
 
 install: brillo

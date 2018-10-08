@@ -48,10 +48,11 @@ typedef struct {
 	char *ctrl;
 	LIGHT_OP_MODE op_mode;
 	LIGHT_VAL_MODE val_mode;
-	uint64_t value;
 	LIGHT_TARGET target;
 	LIGHT_FIELD field;
-	uint64_t cached_max;
+	int64_t value;
+	int64_t usec;
+	int64_t cached_max;
 } light_conf_t;
 
 light_conf_t *light_new(void);

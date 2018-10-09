@@ -102,3 +102,30 @@ int64_t value_to_raw(LIGHT_VAL_MODE mode, int64_t val, int64_t max)
 		return -1;
 	}
 }
+
+/**
+ * value_from_string:
+ * @mode:	mode to use to convert value
+ * @str:	string that the value is stored in
+ *
+ * Returns: the value, or -1 on failure
+ **/
+int64_t value_from_string(LIGHT_VAL_MODE mode, const char* str)
+{
+	int ret;
+	int64_t value = -1;
+	double value_pct = -1;
+
+	if (mode == LIGHT_RAW)
+		ret = sscanf(str, "%" SCNd64, &value);
+	else
+		ret = sscanf(str, "%lf", &value_pct);
+
+	if (ret != 1)
+		return -1;
+
+	if (mode == LIGHT_RAW)
+		return value;
+	else
+		return VALUE_CLAMP_PCT((int64_t) (value_pct * (VALUE_PCT_MAX / 100)));
+}

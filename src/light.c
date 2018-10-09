@@ -26,15 +26,43 @@ light_conf_t *light_new()
 	conf->ctrl = NULL;
 	conf->sys_prefix = NULL;
 	conf->cache_prefix = NULL;
-	conf->op_mode = LIGHT_GET;
-	conf->val_mode = LIGHT_PERCENT;
-	conf->target = LIGHT_BACKLIGHT;
-	conf->field = LIGHT_BRIGHTNESS;
+	conf->ctrl_mode = LIGHT_CTRL_UNSET;
+	conf->op_mode = LIGHT_OP_UNSET;
+	conf->val_mode = LIGHT_VAL_UNSET;
+	conf->target = LIGHT_TARGET_UNSET;
+	conf->field = LIGHT_FIELD_UNSET;
 	conf->value = 0;
 	conf->usec = 0;
 	conf->cached_max = 0;
 
 	return conf;
+}
+
+/**
+ * light_defaults:
+ * @conf:	configuration object to populate
+ *
+ * Populate a light configuration object with default values
+ * for all struct members that have not been set.
+ *
+ * Returns: void
+ **/
+void light_defaults(light_conf_t *conf)
+{
+	if (conf->ctrl_mode == 0)
+		conf->ctrl_mode = LIGHT_CTRL_AUTO;
+
+	if (conf->op_mode == 0)
+		conf->op_mode = LIGHT_GET;
+
+	if (conf->val_mode == 0)
+		conf->val_mode = LIGHT_PERCENT;
+
+	if (conf->target == 0)
+		conf->target = LIGHT_BACKLIGHT;
+
+	if (conf->field == 0)
+		conf->field = LIGHT_BRIGHTNESS;
 }
 
 /**

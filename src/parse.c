@@ -8,19 +8,19 @@
 #include "value.h"
 #include "light.h"
 
-#define ASSERT_SET(t,v) \
-  if(v)\
-  {\
-    fprintf(stderr, t" arguments can not be used in conjunction.\n");\
-    goto error;\
-  }\
-  v = true;
+#define PARSE_SET(str, box, item) \
+	if (box != 0) { \
+		fprintf(stderr, str" arguments can not be used in conjunction.\n"); \
+		goto error; \
+	} else { \
+		box = item; \
+	}
 
-#define ASSERT_OPSET() ASSERT_SET("Operation", opSet)
-#define ASSERT_TARGETSET() ASSERT_SET("Target", targetSet)
-#define ASSERT_FIELDSET() ASSERT_SET("Field", fieldSet)
-#define ASSERT_CTRLSET() ASSERT_SET("Controller", ctrlSet)
-#define ASSERT_VALSET() ASSERT_SET("Value", valSet)
+#define PARSE_SET_OP(new)	PARSE_SET("Operation", light_conf->op_mode, new)
+#define PARSE_SET_TARGET(new)	PARSE_SET("Target", light_conf->target, new)
+#define PARSE_SET_FIELD(new)	PARSE_SET("Field", light_conf->field, new)
+#define PARSE_SET_CTRL(new)	PARSE_SET("Controller", light_conf->ctrl_mode, new)
+#define PARSE_SET_VAL(new)	PARSE_SET("Value", light_conf->val_mode, new)
 
 /**
  * parse_check:
@@ -67,133 +67,110 @@ static bool parse_check(LIGHT_OP_MODE op, LIGHT_FIELD field)
  **/
 light_conf_t *parse_args(int argc, char **argv)
 {
-	int opt;
-	int verbosity = 0;
+	int opt, level;
 	light_conf_t *light_conf = NULL;
 	char *value = NULL;
+
+	level = 0;
 
 	if (!(light_conf = light_new()))
 		return NULL;
 
-	bool opSet = false;
-	bool targetSet = false;
-	bool fieldSet = false;
-	bool ctrlSet = false;
-	bool valSet = false;
-
-	while ((opt = getopt(argc, argv, "HhVGS:A:U:LIObmclkas:pqrv:u:")) != -1) {
+	while ((opt = getopt(argc, argv, "HhVGS:A:U:LIObmclkaes:pqrv:u:")) != -1) {
 		switch (opt) {
 			/* -- Operations -- */
 		case 'H':
 		case 'h':
-			ASSERT_OPSET();
-			light_conf->op_mode = LIGHT_PRINT_HELP;
+			PARSE_SET_OP(LIGHT_PRINT_HELP);
 			break;
 		case 'V':
-			ASSERT_OPSET();
-			light_conf->op_mode = LIGHT_PRINT_VERSION;
+			PARSE_SET_OP(LIGHT_PRINT_VERSION);
 			break;
 		case 'G':
-			ASSERT_OPSET();
-			light_conf->op_mode = LIGHT_GET;
+			PARSE_SET_OP(LIGHT_GET);
 			break;
 		case 'S':
-			ASSERT_OPSET();
-			light_conf->op_mode = LIGHT_SET;
+			PARSE_SET_OP(LIGHT_SET);
 			value = optarg;
 			break;
 		case 'A':
-			ASSERT_OPSET();
-			light_conf->op_mode = LIGHT_ADD;
+			PARSE_SET_OP(LIGHT_ADD);
 			value = optarg;
 			break;
 		case 'U':
-			ASSERT_OPSET();
-			light_conf->op_mode = LIGHT_SUB;
+			PARSE_SET_OP(LIGHT_SUB);
 			value = optarg;
 			break;
 		case 'L':
-			ASSERT_OPSET();
-			light_conf->op_mode = LIGHT_LIST_CTRL;
+			PARSE_SET_OP(LIGHT_LIST_CTRL);
 			break;
 		case 'I':
-			ASSERT_OPSET();
-			light_conf->op_mode = LIGHT_RESTORE;
+			PARSE_SET_OP(LIGHT_RESTORE);
 			break;
 		case 'O':
-			ASSERT_OPSET();
-			light_conf->op_mode = LIGHT_SAVE;
+			PARSE_SET_OP(LIGHT_SAVE);
 			break;
 
 			/* -- Targets -- */
 		case 'l':
-			ASSERT_TARGETSET();
-			light_conf->target = LIGHT_BACKLIGHT;
+			PARSE_SET_TARGET(LIGHT_BACKLIGHT);
 			break;
 		case 'k':
-			ASSERT_TARGETSET();
-			light_conf->target = LIGHT_KEYBOARD;
+			PARSE_SET_TARGET(LIGHT_KEYBOARD);
 			break;
 
 			/* -- Fields -- */
 		case 'b':
-			ASSERT_FIELDSET();
-			light_conf->field = LIGHT_BRIGHTNESS;
+			PARSE_SET_FIELD(LIGHT_BRIGHTNESS);
 			break;
 		case 'm':
-			ASSERT_FIELDSET();
-			light_conf->field = LIGHT_MAX_BRIGHTNESS;
+			PARSE_SET_FIELD(LIGHT_MAX_BRIGHTNESS);
 			break;
 		case 'c':
-			ASSERT_FIELDSET();
-			light_conf->field = LIGHT_MIN_CAP;
+			PARSE_SET_FIELD(LIGHT_MIN_CAP);
 			break;
 
 			/* -- Controller selection -- */
 		case 'a':
-			ASSERT_CTRLSET();
+			PARSE_SET_CTRL(LIGHT_CTRL_AUTO);
+			break;
+		case 'e':
+			PARSE_SET_CTRL(LIGHT_CTRL_ALL);
 			break;
 		case 's':
-			ASSERT_CTRLSET();
-			if (!path_component(optarg)) {
-				fprintf(stderr,
-					"can't handle controller '%s'\n",
-					optarg);
-				light_free(light_conf);
-				return NULL;
+			PARSE_SET_CTRL(LIGHT_CTRL_SPECIFY);
+			if (path_component(optarg)) {
+				light_conf->ctrl = strdup(optarg);
+				break;
 			}
-			light_conf->ctrl = strdup(optarg);
-			break;
+			fprintf(stderr,	"can't handle controller: '%s'\n", optarg);
+			light_free(light_conf);
+			return NULL;
 			/* -- Value modes -- */
 		case 'p':
-			ASSERT_VALSET();
-			light_conf->val_mode = LIGHT_PERCENT;
+			PARSE_SET_VAL(LIGHT_PERCENT);
 			break;
 		case 'q':
-			ASSERT_VALSET();
-			light_conf->val_mode = LIGHT_PERCENT_EXPONENTIAL;
+			PARSE_SET_VAL(LIGHT_PERCENT_EXPONENTIAL);
 			break;
 		case 'r':
-			ASSERT_VALSET();
-			light_conf->val_mode = LIGHT_RAW;
+			PARSE_SET_VAL(LIGHT_RAW);
 			break;
 
 			/* -- Other -- */
 		case 'v':
-			if (sscanf(optarg, "%i", &verbosity) != 1) {
-				fprintf(stderr,
-					"Verbosity not specified in a recognizable format.\n\n");
+			if (sscanf(optarg, "%i", &level) != 1) {
+				fprintf(stderr, "verbosity not recognizable.\n");
 				goto error;
 			}
-			if (verbosity < 0 || verbosity > 3) {
-				fprintf(stderr,
-					"Verbosity has to be between 0 and 3.\n\n");
+			if (level < 0 || level > 3) {
+				fprintf(stderr, "verbosity must be in range 0-3.\n");
 				goto error;
 			}
 			break;
 		case 'u':
 			if (sscanf(optarg, "%" SCNd64, &light_conf->usec) != 1) {
-				LIGHT_ERR("microseconds argument not recognized");
+				fprintf(stderr,	"usecs not recognizable.\n");
 				goto error;
 			}
 			break;
@@ -202,28 +179,17 @@ light_conf_t *parse_args(int argc, char **argv)
 		}
 	}
 
+	light_loglevel = (light_loglevel_t) level;
+
+	light_defaults(light_conf);
+
 	if (!parse_check(light_conf->op_mode, light_conf->field))
 		goto error;
 
-	light_loglevel = (light_loglevel_t) verbosity;
-
-	/* Parse <value> (for set/add/subtract operations) */
-	if (value) {
-		int r;
-		double pct = 0.0;
-
-		if (light_conf->val_mode != LIGHT_RAW)
-			r = sscanf(value, "%lf", &pct);
-		else
-			r = sscanf(value, "%" SCNd64, &light_conf->value);
-
-		if (r != 1) {
-			LIGHT_ERR("<value> not specified in a recognizable format");
-			goto error;
-		}
-
-		if (light_conf->val_mode != LIGHT_RAW)
-			light_conf->value = VALUE_CLAMP_PCT((int64_t) (pct * (VALUE_PCT_MAX / 100)));
+	if (value &&
+	    (light_conf->value = value_from_string(light_conf->val_mode, value)) < 0) {
+		fprintf(stderr, "value not recognizable.\n");
+		goto error;
 	}
 
 	return light_conf;

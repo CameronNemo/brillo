@@ -3,9 +3,6 @@
 
 #include <stdlib.h>
 #include <stdarg.h>
-#if 0
-#include "helpers.h"
-#endif
 
 bool path_component(const char *c);
 char *path_append(char * const str, const char *fmt, ...);

@@ -28,7 +28,7 @@ typedef enum LIGHT_CTRL_MODE {
 } LIGHT_CTRL_MODE;
 
 typedef enum LIGHT_OP_MODE {
-	LIGHT_OP_UNSET,
+	LIGHT_OP_UNSET = 0,
 	LIGHT_GET,
 	LIGHT_SET,
 	LIGHT_ADD,
@@ -64,8 +64,5 @@ typedef struct {
 light_conf_t *light_new(void);
 void light_defaults(light_conf_t *conf);
 void light_free(light_conf_t *conf);
-
-/* Global variable holding the settings for the current run */
-//light_conf_t light_conf;
 
 #endif				/* LIGHT_H */

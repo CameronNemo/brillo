@@ -9,6 +9,8 @@
 #include "log.h"
 #include "file.h"
 
+#define FILE_MODE_DEFAULT (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)
+
 /**
  * file_write_smooth:
  * @fd:		file descriptor to write to
@@ -87,7 +89,7 @@ bool file_write(char const *path, int64_t start, int64_t end, int64_t usec)
 	int fd;
 
 	errno = 0;
-	if ((fd = open(path, O_WRONLY | O_TRUNC | O_SYNC)) < 0) {
+	if ((fd = open(path, O_WRONLY | O_TRUNC | O_CREAT | O_SYNC, FILE_MODE_DEFAULT)) < 0) {
 		LIGHT_ERR("open: %s: '%s'", strerror(errno), path);
 		errno = 0;
 		return false;

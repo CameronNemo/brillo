@@ -33,9 +33,9 @@ endif
 polkit:
 	sed 's|@bindir@|$(PREFIX)/bin|g;s|@prog@|$(PROG)|g;s|@vendor@|$(VENDOR)|g;s|@desc@|$(DESC)|g' contrib/polkit.in >contrib/$(VENDOR).$(PROG).policy
 
-dist: man polkit
+dist: man polkit brillo
 
-install-dist: install
+install-dist: install dist
 	install -dZ -m 755 $(MANDIR) $(PKEDIR) $(UDEVDIR) $(AADIR)
 	install -DZ -m 644 $(PROG).1 -t $(MANDIR)
 	install -DZ -m 644 contrib/$(VENDOR).$(PROG).policy -t $(PKEDIR)

@@ -178,6 +178,8 @@ bool exec_all(light_conf_t *conf)
 	conf->ctrl_mode = LIGHT_CTRL_SPECIFY;
 
 	while ((conf->ctrl = ctrl_iter_next(dir))) {
+		if (conf->op_mode == LIGHT_GET)
+			fprintf(stdout, "%s\t", conf->ctrl);
 		if (!exec_op(conf))
 			ret = false;
 		free(conf->ctrl);

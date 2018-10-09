@@ -2,6 +2,7 @@
 #include "log.h"
 #include "path.h"
 #include "info.h"
+#include "ctrl.h"
 #include "light.h"
 #include "value.h"
 #include "file.h"
@@ -153,6 +154,40 @@ static bool exec_set(light_conf_t *conf,
 }
 
 /**
+ * exec_all:
+ * @conf:	configuration object to operate on
+ *
+ * Iterates through available controllers and executes
+ * the requested operation for each one.
+ *
+ * Returns: true on success, false on failure
+ **/
+bool exec_all(light_conf_t *conf)
+{
+	bool ret = true;
+	DIR *dir;
+
+	dir = opendir(conf->sys_prefix);
+
+	if (!dir) {
+		LIGHT_ERR("opendir: %s", strerror(errno));
+		return false;
+	}
+
+	/* Change the controller mode so exec_op() does its thing */
+	conf->ctrl_mode = LIGHT_CTRL_SPECIFY;
+
+	while ((conf->ctrl = ctrl_iter_next(dir))) {
+		if (!exec_op(conf))
+			ret = false;
+		free(conf->ctrl);
+	}
+
+	closedir(dir);
+	return ret;
+}
+
+/**
  * exec_op:
  * @conf:	configuration object to operate on
  *
@@ -168,6 +203,9 @@ bool exec_op(light_conf_t *conf)
 
 	if (info_print(conf->op_mode, conf->sys_prefix, false))
 		return info_print(conf->op_mode, conf->sys_prefix, true);
+
+	if (conf->ctrl_mode == LIGHT_CTRL_ALL)
+		return exec_all(conf);
 
 	if (!exec_init(conf, &curr, &max, &mincap))
 		return false;

@@ -100,10 +100,9 @@ bool init_strings(light_conf_t *conf)
 		goto error;
 
 	/* Make sure we have a valid controller before we proceed */
-	if (!conf->ctrl && !ctrl_auto(conf))
-		goto error;
+	if ((conf->ctrl_mode == LIGHT_CTRL_ALL) || conf->ctrl || ctrl_auto(conf))
+		return true;
 
-	return true;
 error:
 	light_free(conf);
 	return false;

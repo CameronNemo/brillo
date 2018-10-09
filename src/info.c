@@ -81,5 +81,5 @@ void info_print_version()
  **/
 void info_print_help()
 {
-	printf("Usage: %s [operation [val]] [-k] [-q|-r] [-m|-c] [-s ctrl] [-u usecs] [-v loglevel]\n", LIGHT_PROG);
+	printf("Usage: %s [options] [operation [value]]\n", LIGHT_PROG);
 }

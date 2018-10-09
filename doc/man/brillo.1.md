@@ -5,7 +5,7 @@
 brillo - Backlight and Keyboard LED control tool
 
 # SYNOPSIS
-**brillo** [**operation** [*value*]] [**-k**] [**-q**|**-r**] [**-m**|**-c**] [**-s** *ctrl*] [**-u** *usecs*] [**-v** *loglevel*]
+**brillo** [**operation** [*value*]] [**-k**] [**-q**|**-r**] [**-m**|**-c**] [**-e**|**-s** *ctrl*] [**-u** *usecs*] [**-v** *loglevel*]
 
 # DESCRIPTION
 
@@ -35,9 +35,11 @@ and LED devices on Linux. Notable features include:
 *Controllers*
 
 The default controller is automatically selected to maximize precision.
-This can be overridden using the **-s** option.
+To select every controller available, use the **-e** option.
+To select a specific controller, use the **-s** option.
 
 * **-a**:	Automatic controller selection (default)
+* **-e**:	Operate on every controller available
 * **-s** *CONTROLLER*:	Manual controller selection
 
 The list operation (**-L**) can be used to discover available controllers.
@@ -85,7 +87,7 @@ such as for keyboard controllers.
 time period. Use the **-u** *microseconds* option to specify how long the operation
 should take. This flag is silently ignored when not setting the brightness.
 
-* **-u** *microseconds*:	microseconds used to space the operation out
+* **-u** *microseconds*:	time used to space the operation out
 
 *Verbosity*
 

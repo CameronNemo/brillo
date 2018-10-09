@@ -18,7 +18,7 @@ light_loglevel_t light_loglevel;
 	if (light_loglevel >= lvl)			\
 		do {					\
 			fprintf(fp, prefix);		\
-			fprintf(fp, "%s:%d:%s(): ", __FILE__, __LINE__, __func__); \
+			fprintf(fp, "%s:%d\t%s():\t", __FILE__, __LINE__, __func__); \
 			fprintf(fp, __VA_ARGS__);	\
 			fprintf(fp, "\n");		\
 		} while (0)

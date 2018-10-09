@@ -7,8 +7,8 @@
 #include "file.h"
 #include "exec.h"
 
-static int64_t exec_fetch_mincap(light_conf_t *conf);
-static bool exec_set_field(light_conf_t *conf, LIGHT_FIELD field, int64_t val_old, int64_t val_new);
+static int64_t exec_get_min(light_conf_t *conf);
+static bool exec_write(light_conf_t *conf, LIGHT_FIELD field, int64_t val_old, int64_t val_new);
 static bool exec_restore(light_conf_t *conf);
 
 /**
@@ -42,7 +42,7 @@ static bool exec_init(light_conf_t *conf,
 		return false;
 	}
 
-	if ((*mincap = exec_fetch_mincap(conf)) < 0) {
+	if ((*mincap = exec_get_min(conf)) < 0) {
 		LIGHT_ERR("could not get mincap");
 		return false;
 	}
@@ -149,18 +149,18 @@ static bool exec_set(light_conf_t *conf,
 		new_raw_value += 1;
 	new_raw_value = value_clamp(new_raw_value, mincap, max);
 
-	return exec_set_field (conf, conf->field, curr, new_raw_value);
+	return exec_write(conf, conf->field, curr, new_raw_value);
 }
 
 /**
- * light_execute:
+ * exec_op:
  * @conf:	configuration object to operate on
  *
  * Executes the requested operation.
  *
  * Returns: true on success, false on failure
  **/
-bool light_execute(light_conf_t *conf)
+bool exec_op(light_conf_t *conf)
 {
 	int64_t curr;	/* The current brightness, in raw units */
 	int64_t max;	/* The max brightness, in raw units */
@@ -178,7 +178,7 @@ bool light_execute(light_conf_t *conf)
 	case LIGHT_GET:
 		return exec_get(conf->field, conf->val_mode, curr, max, mincap);
 	case LIGHT_SAVE:
-		return exec_set_field(conf, LIGHT_SAVERESTORE, curr, curr);
+		return exec_write(conf, LIGHT_SAVERESTORE, curr, curr);
 	case LIGHT_RESTORE:
 		return exec_restore(conf);
 	case LIGHT_SET:
@@ -274,17 +274,17 @@ int64_t light_fetch(light_conf_t *conf, LIGHT_FIELD field)
 }
 
 /**
- * exec_set_field:
+ * exec_write:
  * @conf:	configuration object to operate on
  * @field:	field to write value into
  * @val_old:	old value
  * @val_new:	new value
  *
- * Sets a value for a given controller and field.
+ * Writes a value for a given controller and field.
  *
  * Returns: true if write was successful, otherwise false
  **/
-static bool exec_set_field(light_conf_t *conf, LIGHT_FIELD field,
+static bool exec_write(light_conf_t *conf, LIGHT_FIELD field,
 		int64_t val_old, int64_t val_new)
 {
 	char *path;
@@ -312,12 +312,12 @@ static bool exec_set_field(light_conf_t *conf, LIGHT_FIELD field,
 }
 
 /**
- * exec_fetch_mincap:
+ * exec_get_min:
  * @conf:	configuration object to operate on
  *
  * Returns: the mincap if it is available, otherwise 0
  **/
-static int64_t exec_fetch_mincap(light_conf_t *conf)
+static int64_t exec_get_min(light_conf_t *conf)
 {
 	int64_t mincap;
 
@@ -347,7 +347,7 @@ static bool exec_restore(light_conf_t *conf)
 		return false;
 	}
 
-	if (!exec_set_field(conf, LIGHT_BRIGHTNESS, val, val)) {
+	if (!exec_write(conf, LIGHT_BRIGHTNESS, val, val)) {
 		LIGHT_ERR("could not set restored brightness");
 		return false;
 	}

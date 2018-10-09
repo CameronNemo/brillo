@@ -22,7 +22,7 @@ int main(int argc, char **argv)
 		return LIGHT_RETURNVAL_INITFAIL;
 	}
 
-	if (!light_execute(light_conf)) {
+	if (!exec_op(light_conf)) {
 		light_free(light_conf);
 		LIGHT_ERR("Execution failed");
 		return EXIT_FAILURE;

@@ -3,9 +3,9 @@
  "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
  "http://www.freedesktop.org/standards/PolicyKit/1.0/policyconfig.dtd">
 <policyconfig>
-  <vendor>com.gitlab.CameronNemo</vendor>
+  <vendor>@vendor@</vendor>
   <vendor_url>https://gitlab.com/CameronNemo/@prog@</vendor_url>
-  <action id="org.freedesktop.policykit.pkexec.@prog@">
+  <action id="@vendor@.pkexec.@prog@">
     <description>@desc@</description>
     <defaults>
       <allow_any>no</allow_any>

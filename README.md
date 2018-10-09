@@ -6,9 +6,10 @@ Introduction
 Notable features include:
 
 * Automatic best controller detection
+* Smooth transitions and natural brightness adjustments
 * Ability to save and restore brightness across boots
 * Directly using `sysfs` to set brightness without relying on X
-* Unpriveleged access with no new setuid binaries
+* Unprivileged access with no new setuid binaries
 * Containment with AppArmor
 
 For detailed usage, please refer to the [man page](doc/man/brillo.1.md).
@@ -37,8 +38,8 @@ Active sessions can invoke `brillo` via `pkexec` to escalate priveleges.
 
 Examples:
 
-    pkexec brillo -O
-    pkexec brillo -A 5
+    pkexec /usr/bin/brillo -O
+    pkexec /usr/bin/brillo -A 5
 
 > Note: this requires polkitd and (e)logind or ConsoleKit.
 

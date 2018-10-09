@@ -2,7 +2,7 @@
 % Cameron Nemo
 % OCTOBER 2018
 # NAME
-brillo - Backlight and Keyboard LED control tool
+brillo - control the brightness of backlight and keyboard LED devices
 
 # SYNOPSIS
 **brillo** [**operation** [*value*]] [**-k**] [**-q**|**-r**] [**-m**|**-c**] [**-e**|**-s** *ctrl*] [**-u** *usecs*] [**-v** *loglevel*]
@@ -13,9 +13,10 @@ brillo - Backlight and Keyboard LED control tool
 and LED devices on Linux. Notable features include:
 
 * Automatic best controller detection
+* Smooth transitions and exponential (natural) adjustments
 * Ability to save and restore brightness across boots
 * Directly using **sysfs** to set brightness without relying on X
-* Unpriveleged access with no new setuid binaries
+* Unprivileged access with no new setuid binaries
 * Containment with AppArmor
 
 # OPTIONS
@@ -70,7 +71,7 @@ useful for devices that become pitch black when the brightness is set to 0.
 Values may be given, or presented, in percent or raw mode.
 
 The default value mode is linear percentages, however the **-q** option
-can be used for logarithmic percentages. Logarithmic mode offers a more
+can be used for exponential percentages. Exponential mode offers a more
 natural and gradual brightness scale.
 
 Raw mode will use the same format and range given by the device driver;
@@ -78,7 +79,7 @@ this mode is most useful when a high degree of precision is required,
 such as for keyboard controllers.
 
 * **-p**:	Linear percentages (default)
-* **-q**:	Logarithmic percentages
+* **-q**:	Exponential percentages
 * **-r**:	Raw values
 
 *Smooth adjustment*
@@ -114,13 +115,26 @@ Specify the controller to use:
 
     brillo -s intel_backlight -A 5
 
+Set the brightness to 50% for every controller:
+
+    brillo -e -S 50
+
+Retrieve or increase the brightness using an exponential scale:
+
+    brillo -q
+    brillo -q -A 5
+
+Decrease the brightness and smooth the operation over 1500 microseconds:
+
+    brillo -u 1500 -U 5
+
 Get the raw maximum brightness value:
 
-    brillo -mr
+    brillo -rm
 
 Set the minimum cap for the *acpi_video0* controller to a raw value of 2:
 
-    brillo -cr -s acpi_video0 -S 2
+    brillo -rc -s acpi_video0 -S 2
 
 *Note*: subsequent attempts to set the controller's brightness to a raw value less than 2 will then be raised to this minimum threshold.
 
@@ -133,11 +147,6 @@ Activate a specific controller LED:
     brillo -k -s "input15::scrolllock" -S 100
 
 *Note*: LEDs often only take 0 or 1 in raw value (i.e. for off/on). In these cases, you can use any non-zero value instead of 100.
-
-Adjust or retrieve the brightness using a logarithmic scale:
-
-    brillo -q
-    brillo -q -A 5
 
 # COPYRIGHT
 

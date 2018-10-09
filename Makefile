@@ -1,5 +1,5 @@
 PROG := brillo
-DESC := Backlight and Keyboard LED control tool
+DESC := Control the brightness of backlight and keyboard LED devices
 VENDOR := com.gitlab.CameronNemo
 
 ifeq ($(PREFIX),)

@@ -186,6 +186,11 @@ light_conf_t *parse_args(int argc, char **argv)
 	if (!parse_check(light_conf->op_mode, light_conf->field))
 		goto error;
 
+	if (light_conf->field != LIGHT_BRIGHTNESS && light_conf->usec != 0) {
+		LIGHT_WARN("Resetting time to zero for non-brightness field");
+		light_conf->usec = 0;
+	}
+
 	if (value &&
 	    (light_conf->value = value_from_string(light_conf->val_mode, value)) < 0) {
 		fprintf(stderr, "value not recognizable.\n");

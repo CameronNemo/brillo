@@ -58,6 +58,30 @@ static bool exec_init(light_conf_t *conf,
 }
 
 /**
+ * exec_open:
+ * @conf:	configuration object
+ * @field:	field to access
+ * @flags:	flags to pass to open
+ *
+ * Opens a given field with the flags specified.
+ *
+ * Returns: fd on success, negative value on failure
+ **/
+static int exec_open(light_conf_t *conf, LIGHT_FIELD field, int flags)
+{
+	int fd;
+	char *path;
+
+	if (!(path = light_path_new(conf, field)))
+		return -1;
+
+	fd = file_open(path, flags);
+	free(path);
+
+	return fd;
+}
+
+/**
  * exec_get:
  * @field:	field to operate on
  * @mode:	value mode to use
@@ -104,7 +128,6 @@ static bool exec_get(LIGHT_FIELD field, LIGHT_VAL_MODE mode,
 /**
  * exec_set:
  * @conf:	configuration object to operate on
- * @curr:	current raw value
  * @max:	maximum raw value
  * @mincap:	minimum raw value
  *
@@ -112,28 +135,33 @@ static bool exec_get(LIGHT_FIELD field, LIGHT_VAL_MODE mode,
  *
  * Returns: true on success, false on failure
  **/
-static bool exec_set(light_conf_t *conf,
-		int64_t curr, int64_t max, int64_t mincap)
+static bool exec_set(light_conf_t *conf, int64_t max, int64_t mincap)
 {
-	int64_t specified_value, current_value, new_raw_value;
+	int fd;
+	int64_t new_value, curr_value, new_raw, curr_raw;
 
-	specified_value = conf->value;
-	current_value = value_from_raw(conf->val_mode, curr, max);
+	if ((fd = exec_open(conf, conf->field, O_WRONLY)) < 0)
+		return false;
 
-	LIGHT_NOTE("specified value: %" PRId64, specified_value);
-	LIGHT_NOTE("current value: %" PRId64, current_value);
+	if ((curr_raw = light_fetch(conf, conf->field)) < 0)
+		return false;
+
+	new_value = conf->value;
+	curr_value = value_from_raw(conf->val_mode, curr_raw, max);
+	LIGHT_NOTE("specified value: %" PRId64, new_value);
+	LIGHT_NOTE("current value: %" PRId64, curr_value);
 
 	if (conf->field == LIGHT_BRIGHTNESS) {
 		switch (conf->op_mode) {
 		case LIGHT_SUB:
 			/* val is unsigned so we need to get back to >= 0 */
-			if (specified_value > current_value)
-				specified_value = -current_value;
+			if (new_value > curr_value)
+				new_value = -curr_value;
 			else
-				specified_value = -specified_value;
+				new_value = -new_value;
 			/* FALLTHRU */
 		case LIGHT_ADD:
-			specified_value += current_value;
+			new_value += curr_value;
 			break;
 		case LIGHT_SET:
 			break;
@@ -144,13 +172,15 @@ static bool exec_set(light_conf_t *conf,
 		return false;
 	}
 
-	new_raw_value = value_to_raw(conf->val_mode, specified_value, max);
-	/* Force any increment to result in some change, however small */
-	if (conf->op_mode == LIGHT_ADD && new_raw_value <= curr)
-		new_raw_value += 1;
-	new_raw_value = value_clamp(new_raw_value, mincap, max);
+	new_raw = value_to_raw(conf->val_mode, new_value, max);
 
-	return exec_write(conf, conf->field, curr, new_raw_value);
+	/* Force any increment to result in some change, however small */
+	if (conf->op_mode == LIGHT_ADD && new_raw <= curr_raw)
+		new_raw += 1;
+
+	new_raw = value_clamp(new_raw, mincap, max);
+
+	return file_write(fd, curr_raw, new_raw, conf->usec);
 }
 
 /**
@@ -224,7 +254,7 @@ bool exec_op(light_conf_t *conf)
 	case LIGHT_SET:
 	case LIGHT_SUB:
 	case LIGHT_ADD:
-		return exec_set(conf, curr, max, mincap);
+		return exec_set(conf, max, mincap);
 	default:
 		/* Should not be reached */
 		fprintf(stderr,
@@ -327,28 +357,12 @@ int64_t light_fetch(light_conf_t *conf, LIGHT_FIELD field)
 static bool exec_write(light_conf_t *conf, LIGHT_FIELD field,
 		int64_t val_old, int64_t val_new)
 {
-	char *path;
-	bool r;
+	int fd;
 
-	/* sanity check */
-	if (field != LIGHT_BRIGHTNESS && conf->usec != 0) {
-		LIGHT_WARN("Resetting time to zero for non-brightness field");
-		conf->usec = 0;
-	}
-
-	if (!(path = light_path_new(conf, field)))
+	if ((fd = exec_open(conf, field, O_WRONLY)) < 0)
 		return false;
 
-	LIGHT_NOTE("writing value %" PRId64 " (raw) to '%s'", val_new, path);
-
-	r = file_write(path, val_old, val_new, conf->usec);
-	free(path);
-
-	if (!r) {
-		LIGHT_ERR("error writing value to file");
-	}
-
-	return r;
+	return file_write(fd, val_old, val_new, conf->usec);
 }
 
 /**

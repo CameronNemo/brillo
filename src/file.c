@@ -110,9 +110,11 @@ static bool file_rewrite(int fd, int64_t val)
  *
  * Returns: true on success, false on failure.
  **/
-static bool file_write_smooth(int fd, int64_t start, int64_t end, int64_t usec)
+bool file_write(int fd, int64_t start, int64_t end, int64_t usec)
 {
 	struct timespec t0;
+
+	LIGHT_NOTE("Writing (raw) value: %" PRId64, end);
 
 	int64_t num_writes = usec * SMOOTH_WRITES_PER_SECOND / 1e6;
 
@@ -139,6 +141,7 @@ static bool file_write_smooth(int fd, int64_t start, int64_t end, int64_t usec)
 		}
 	}
 
+	close(fd);
 	return true;
 }
 
@@ -151,15 +154,15 @@ static bool file_write_smooth(int fd, int64_t start, int64_t end, int64_t usec)
  *
  * Returns: an fd for the path on success, -1 on failure
  **/
-bool file_write(char const *path, int64_t start, int64_t end, int64_t usec)
+int file_open(char const *path, int mode)
 {
 	int fd;
 
 	errno = 0;
-	if ((fd = open(path, O_WRONLY | O_TRUNC | O_CREAT | O_SYNC, FILE_MODE_DEFAULT)) < 0) {
+	if ((fd = open(path, mode | O_TRUNC | O_CREAT | O_SYNC, FILE_MODE_DEFAULT)) < 0) {
 		LIGHT_ERR("open: %s: '%s'", strerror(errno), path);
 		errno = 0;
-		return false;
+		return -1;
 	}
 
 	errno = 0;
@@ -167,14 +170,10 @@ bool file_write(char const *path, int64_t start, int64_t end, int64_t usec)
 		LIGHT_ERR("lockf: %s: '%s'", strerror(errno), path);
 		errno = 0;
 		close(fd);
-		return false;
+		return -1;
 	}
 
-	if (!file_write_smooth(fd, start, end, usec))
-		return false;
-
-	close(fd);
-	return true;
+	return fd;
 }
 
 /**

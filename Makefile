@@ -18,7 +18,7 @@ AADIR=$(DESTDIR)/etc/apparmor.d
 GOMD2MAN := $(shell which go-md2man 2>/dev/null)
 
 brillo: src/value.c src/light.c src/file.c src/parse.c src/path.c src/ctrl.c src/info.c src/init.c src/exec.c src/main.c
-	$(CC) $(CFLAGS) $(LDLIBS) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^ $(LDLIBS)
 
 install: brillo
 	install -dZ -m 755 $(BINDIR)
@@ -53,4 +53,4 @@ uninstall-dist:
 clean:
 	rm -vfr *~ $(PROG) $(PROG).1 contrib/$(VENDOR).$(PROG).policy
 
-.PHONY: install uninstall clean
+.PHONY: install uninstall polkit dist install-dist uninstall-dist man clean

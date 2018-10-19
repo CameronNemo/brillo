@@ -6,8 +6,8 @@ ifeq ($(PREFIX),)
 	PREFIX := /usr
 endif
 
-CFLAGS := -std=c99 -D_XOPEN_SOURCE=700 -pedantic -Wall -Werror $(CFLAGS)
-LDLIBS := $(LDLIBS) -lm
+CFLAGS += -std=c99 -D_XOPEN_SOURCE=700 -pedantic -Wall -Werror
+LDLIBS += -lm
 
 BINDIR=$(DESTDIR)$(PREFIX)/bin
 MANDIR=$(DESTDIR)$(PREFIX)/share/man/man1
@@ -15,25 +15,42 @@ PKEDIR=$(DESTDIR)$(PREFIX)/share/polkit-1/actions
 UDEVDIR=$(DESTDIR)$(PREFIX)/lib/udev/rules.d
 AADIR=$(DESTDIR)/etc/apparmor.d
 
-GOMD2MAN := $(shell which go-md2man 2>/dev/null)
+SRC = \
+	src/value.c \
+	src/light.c \
+	src/file.c \
+	src/parse.c \
+	src/path.c \
+	src/ctrl.c \
+	src/info.c \
+	src/init.c \
+	src/exec.c \
+	src/main.c
 
-brillo: src/value.c src/light.c src/file.c src/parse.c src/path.c src/ctrl.c src/info.c src/init.c src/exec.c src/main.c
-	$(CC) $(CFLAGS) -o $@ $^ $(LDLIBS)
+OBJ = $(SRC:.c=.o)
 
-install: brillo
+$(PROG): $(OBJ)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+
+install: $(PROG)
 	install -dZ -m 755 $(BINDIR)
 	install -DZ -m 755 ./$(PROG) -t $(BINDIR)
 
-man:
+GOMD2MAN := $(shell which go-md2man 2>/dev/null)
+
+$(PROG).1:
 ifndef GOMD2MAN
-$(error "go-md2man not available")
+	$(error "go-md2man not available")
+else
+	$(GOMD2MAN) -in doc/man/brillo.1.md -out $@
 endif
-	$(GOMD2MAN) -in doc/man/brillo.1.md -out $(PROG).1
+
+man: $(PROG).1
 
 polkit:
 	sed 's|@bindir@|$(PREFIX)/bin|g;s|@prog@|$(PROG)|g;s|@vendor@|$(VENDOR)|g;s|@desc@|$(DESC)|g' contrib/polkit.in >contrib/$(VENDOR).$(PROG).policy
 
-dist: man polkit brillo
+dist: $(PROG) man polkit
 
 install-dist: install dist
 	install -dZ -m 755 $(MANDIR) $(PKEDIR) $(UDEVDIR) $(AADIR)
@@ -51,6 +68,6 @@ uninstall-dist:
 	rm -f $(UDEVDIR)/90-brillo.rules
 
 clean:
-	rm -vfr *~ $(PROG) $(PROG).1 contrib/$(VENDOR).$(PROG).policy
+	rm -vfr *~ $(PROG) $(PROG).1 $(OBJ) contrib/$(VENDOR).$(PROG).policy
 
 .PHONY: install uninstall polkit dist install-dist uninstall-dist man clean

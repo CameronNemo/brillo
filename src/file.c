@@ -180,7 +180,7 @@ int file_open(char const *path, int mode)
  * file_read:
  * @path:	path to read value from
  *
- * Returns: value, or -errno on error
+ * Returns: value, or -1 on error
  */
 int64_t file_read(char const *path)
 {
@@ -195,10 +195,13 @@ int64_t file_read(char const *path)
 
 	errno = 0;
 	if (fscanf(file, "%" SCNd64, &value) != 1) {
-		LIGHT_ERR("fscanf: %s: '%s'", strerror(errno), path);
-		errno = 0;
 		fclose(file);
-		return -errno;
+		if (errno != 0) {
+			LIGHT_ERR("fscanf: %s: '%s'", strerror(errno), path);
+		} else {
+			LIGHT_ERR("File should contain one number: '%s'", path);
+		}
+		return -1;
 	}
 
 	fclose(file);

@@ -126,7 +126,7 @@ Retrieve or increase the brightness using an exponential scale:
 
 Decrease the brightness and smooth the operation over 1500 microseconds:
 
-    brillo -u 1500 -U 5
+    brillo -u 150000 -U 5
 
 Get the raw maximum brightness value:
 

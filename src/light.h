@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #define LIGHT_PROG "brillo"
-#define LIGHT_VER "1.4.0"
+#define LIGHT_VER "1.4.2"
 
 typedef enum LIGHT_FIELD {
 	LIGHT_FIELD_UNSET = 0,

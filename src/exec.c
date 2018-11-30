@@ -250,7 +250,8 @@ bool exec_op(light_conf_t *conf)
 	case LIGHT_SAVE:
 		return exec_write(conf, LIGHT_SAVERESTORE, curr, curr);
 	case LIGHT_RESTORE:
-		return exec_restore(conf);
+		if (!exec_restore(conf))
+			return false;
 	case LIGHT_SET:
 	case LIGHT_SUB:
 	case LIGHT_ADD:
@@ -401,10 +402,9 @@ static bool exec_restore(light_conf_t *conf)
 		return false;
 	}
 
-	if (!exec_write(conf, LIGHT_BRIGHTNESS, val, val)) {
-		LIGHT_ERR("could not set restored brightness");
-		return false;
-	}
+	conf->value = val;
+	conf->val_mode = LIGHT_RAW;
+	conf->op_mode = LIGHT_SET;
 
 	return true;
 }

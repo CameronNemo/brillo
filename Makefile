@@ -53,11 +53,12 @@ polkit:
 dist: $(PROG) man polkit
 
 install-dist: install dist
-	install -dZ -m 755 $(MANDIR) $(PKEDIR) $(UDEVDIR) $(AADIR)
+	install -dZ -m 755 $(MANDIR) $(PKEDIR) $(UDEVDIR) $(AADIR) $(AADIR)/local
 	install -DZ -m 644 $(PROG).1 -t $(MANDIR)
 	install -DZ -m 644 contrib/$(VENDOR).$(PROG).policy -t $(PKEDIR)
 	install -DZ -m 644 contrib/90-brillo.rules -t $(UDEVDIR)
 	install -DZ -m 644 contrib/bin.brillo -t $(AADIR)
+	install -DZ -m 644 contrib/local/bin.brillo -t $(AADIR)/local
 
 uninstall:
 	rm -f $(BINDIR)/$(PROG)

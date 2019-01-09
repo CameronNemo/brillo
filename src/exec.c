@@ -252,6 +252,7 @@ bool exec_op(light_conf_t *conf)
 	case LIGHT_RESTORE:
 		if (!exec_restore(conf))
 			return false;
+		/* FALLTHRU */
 	case LIGHT_SET:
 	case LIGHT_SUB:
 	case LIGHT_ADD:

@@ -2,11 +2,9 @@ PROG := brillo
 DESC := Control the brightness of backlight and keyboard LED devices
 VENDOR := com.gitlab.CameronNemo
 
-ifeq ($(PREFIX),)
-	PREFIX := /usr
-endif
+PREFIX ?= /usr
 
-CFLAGS += -std=c99 -D_XOPEN_SOURCE=700 -pedantic -Wall -Werror
+CFLAGS += -std=c99 -D_XOPEN_SOURCE=700 -pedantic -Wall -Werror -Wextra
 LDLIBS += -lm
 
 BINDIR=$(DESTDIR)$(PREFIX)/bin
@@ -47,8 +45,14 @@ endif
 
 man: $(PROG).1
 
-polkit:
-	sed 's|@bindir@|$(PREFIX)/bin|g;s|@prog@|$(PROG)|g;s|@vendor@|$(VENDOR)|g;s|@desc@|$(DESC)|g' contrib/polkit.in >contrib/$(VENDOR).$(PROG).policy
+contrib/$(VENDOR).$(PROG).policy: contrib/polkit.in
+	sed -e 's|@bindir@|$(PREFIX)/bin|g' \
+	    -e 's|@prog@|$(PROG)|g' \
+	    -e 's|@vendor@|$(VENDOR)|g' \
+	    -e 's|@desc@|$(DESC)|g' \
+	    $^ > $@
+
+polkit: contrib/$(VENDOR).$(PROG).policy
 
 dist: $(PROG) man polkit
 

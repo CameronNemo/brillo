@@ -1,0 +1,8 @@
+image: cameronnemo/gitlab-ci-brillo
+
+before_script:
+        - xbps-install -Syu
+
+do-build:
+        stage: build
+        script: make

@@ -1,8 +1,18 @@
-image: cameronnemo/gitlab-ci-brillo
+image:
+        name: cameronnemo/gitlab-ci-brillo
+        entrypoint: [""]
+
+stages:
+        - lint
+        - build
 
 before_script:
         - xbps-install -Syu
 
-do-build:
+cppcheck:
+        stage: lint
+        script: cppcheck --error-exitcode=3 .
+
+make:
         stage: build
         script: make

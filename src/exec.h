@@ -4,7 +4,8 @@
 #include "light.h"
 
 bool exec_op(light_conf_t *conf);
-char *light_path_new(light_conf_t *conf, LIGHT_FIELD type);
+char *light_path_new(light_conf_t *conf, LIGHT_FIELD type)
+	__attribute__ ((warn_unused_result));
 int64_t light_fetch(light_conf_t *conf, LIGHT_FIELD field);
 
 #endif /* EXEC_H */

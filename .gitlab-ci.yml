@@ -11,7 +11,7 @@ before_script:
 
 cppcheck:
         stage: lint
-        script: cppcheck --error-exitcode=3 .
+        script: cppcheck --inline-suppr --error-exitcode=3 .
 
 make:
         stage: build

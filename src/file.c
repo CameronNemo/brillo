@@ -192,13 +192,12 @@ int64_t file_read(char const *path)
 
 	errno = 0;
 	if (fscanf(file, "%" SCNd64, &value) != 1) {
-		if (errno != 0) {
-			LIGHT_ERR("fscanf: %s: '%s'", strerror(errno), path);
-			return -errno;
-		}
-		LIGHT_ERR("File should contain one number: '%s'", path);
-		return -1;
+		if (errno == 0)
+			errno = EINVAL;
+		LIGHT_ERR("fscanf: %s: '%s'", strerror(errno), path);
+		value = -errno;
 	}
 
+	/* cppcheck-suppress resourceLeak */
 	return value;
 }

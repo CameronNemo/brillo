@@ -1,6 +1,7 @@
 #ifndef LIGHT_H
 #define LIGHT_H
 
+#include <stdlib.h>
 #include <stdint.h>
 
 #define LIGHT_PROG "brillo"
@@ -47,7 +48,7 @@ typedef enum LIGHT_VAL_MODE {
 	LIGHT_PERCENT_EXPONENTIAL
 } LIGHT_VAL_MODE;
 
-typedef struct {
+struct light_conf {
 	char *sys_prefix;
 	char *cache_prefix;
 	char *ctrl;
@@ -59,10 +60,21 @@ typedef struct {
 	int64_t value;
 	int64_t usec;
 	int64_t cached_max;
-} light_conf_t;
+};
 
-light_conf_t *light_new(void);
-void light_defaults(light_conf_t *conf);
-void light_free(light_conf_t *conf);
+static inline void __lightburn__(struct light_conf **conf)
+{
+	if (!(*conf))
+		return;
+	free((*conf)->ctrl);
+	free((*conf)->sys_prefix);
+	free((*conf)->cache_prefix);
+	free(*conf);
+}
+
+#define __lightburn __attribute__((cleanup(__lightburn__)))
+
+struct light_conf *light_new(void);
+void light_defaults(struct light_conf *conf);
 
 #endif				/* LIGHT_H */

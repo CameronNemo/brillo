@@ -16,11 +16,11 @@
 		box = item; \
 	}
 
-#define PARSE_SET_OP(new)	PARSE_SET("Operation", light_conf->op_mode, new)
-#define PARSE_SET_TARGET(new)	PARSE_SET("Target", light_conf->target, new)
-#define PARSE_SET_FIELD(new)	PARSE_SET("Field", light_conf->field, new)
-#define PARSE_SET_CTRL(new)	PARSE_SET("Controller", light_conf->ctrl_mode, new)
-#define PARSE_SET_VAL(new)	PARSE_SET("Value", light_conf->val_mode, new)
+#define PARSE_SET_OP(new)	PARSE_SET("Operation", ctx->op_mode, new)
+#define PARSE_SET_TARGET(new)	PARSE_SET("Target", ctx->target, new)
+#define PARSE_SET_FIELD(new)	PARSE_SET("Field", ctx->field, new)
+#define PARSE_SET_CTRL(new)	PARSE_SET("Controller", ctx->ctrl_mode, new)
+#define PARSE_SET_VAL(new)	PARSE_SET("Value", ctx->val_mode, new)
 
 /**
  * parse_check:
@@ -60,20 +60,20 @@ static bool parse_check(LIGHT_OP_MODE op, LIGHT_FIELD field)
  * @argc	argument count
  * @argv	argument array
  *
- * WARNING: may allocate a string in light_conf->ctrl,
+ * WARNING: may allocate a string in ctx->ctrl,
  *          but will not free it
  *
  * Returns: a valid conf object on success, NULL on failure
  **/
-light_conf_t *parse_args(int argc, char **argv)
+struct light_conf *parse_args(int argc, char **argv)
 {
 	int opt, level;
-	light_conf_t *light_conf = NULL;
-	char *value = NULL;
+	struct light_conf *ctx = NULL;
+	char *value = NULL, *ctrl = NULL;
 
 	level = 0;
 
-	if (!(light_conf = light_new()))
+	if (!(ctx = light_new()))
 		return NULL;
 
 	while ((opt = getopt(argc, argv, "HhVGS:A:U:LIObmclkaes:pqrv:u:")) != -1) {
@@ -139,13 +139,8 @@ light_conf_t *parse_args(int argc, char **argv)
 			break;
 		case 's':
 			PARSE_SET_CTRL(LIGHT_CTRL_SPECIFY);
-			if (path_component(optarg)) {
-				light_conf->ctrl = strdup(optarg);
-				break;
-			}
-			fprintf(stderr,	"can't handle controller: '%s'\n", optarg);
-			light_free(light_conf);
-			return NULL;
+			ctrl = optarg;
+			break;
 			/* -- Value modes -- */
 		case 'p':
 			PARSE_SET_VAL(LIGHT_PERCENT);
@@ -169,7 +164,7 @@ light_conf_t *parse_args(int argc, char **argv)
 			}
 			break;
 		case 'u':
-			if (sscanf(optarg, "%" SCNd64, &light_conf->usec) != 1) {
+			if (sscanf(optarg, "%" SCNd64, &ctx->usec) != 1) {
 				fprintf(stderr,	"usecs not recognizable.\n");
 				goto error;
 			}
@@ -181,25 +176,30 @@ light_conf_t *parse_args(int argc, char **argv)
 
 	light_loglevel = (light_loglevel_t) level;
 
-	light_defaults(light_conf);
+	light_defaults(ctx);
 
-	if (!parse_check(light_conf->op_mode, light_conf->field))
+	if (!parse_check(ctx->op_mode, ctx->field))
 		goto error;
 
-	if (light_conf->field != LIGHT_BRIGHTNESS && light_conf->usec != 0) {
+	if (ctx->field != LIGHT_BRIGHTNESS && ctx->usec != 0) {
 		LIGHT_WARN("Resetting time to zero for non-brightness field");
-		light_conf->usec = 0;
+		ctx->usec = 0;
 	}
 
 	if (value &&
-	    (light_conf->value = value_from_string(light_conf->val_mode, value)) < 0) {
+	    (ctx->value = value_from_string(ctx->val_mode, value)) < 0) {
 		fprintf(stderr, "value not recognizable.\n");
 		goto error;
 	}
 
-	return light_conf;
+	if (ctrl && (!path_component(ctrl) || !(ctx->ctrl = strdup(ctrl)))) {
+		fprintf(stderr, "can't handle controller: '%s'\n", ctrl);
+		goto error;
+	}
+
+	return ctx;
 error:
 	info_print_help();
-	light_free(light_conf);
+	free(ctx);
 	return NULL;
 }

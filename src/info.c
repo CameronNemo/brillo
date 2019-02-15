@@ -80,7 +80,8 @@ void info_print_version()
  *
  * Prints help dialog to standard output.
  **/
-void info_print_help()
+void *info_print_help()
 {
 	printf("Usage: %s [options] [operation [value]]\n", LIGHT_PROG);
+	return NULL;
 }

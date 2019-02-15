@@ -73,12 +73,9 @@ static char *init_cache(const char * const tgt)
  *
  * Initializes sys/cache prefixes and controller string.
  *
- * WARNING: may allocate strings in light_conf struct,
- *          call light_free() to free them
- *
  * Returns: true on success, false on failure
  **/
-bool init_strings(light_conf_t *conf)
+bool init_strings(struct light_conf *conf)
 {
 	const char *tgt;
 
@@ -87,23 +84,21 @@ bool init_strings(light_conf_t *conf)
 	else if (conf->target == LIGHT_KEYBOARD)
 		tgt = "leds";
 	else
-		goto error;
+		return false;
 
 	if (!(conf->sys_prefix = init_sys(tgt)))
-		goto error;
+		return false;
 
 	/* info mode needs no more initialization */
 	if (info_print(conf->op_mode, conf->sys_prefix, false))
 		return true;
 
 	if (!(conf->cache_prefix = init_cache(tgt)))
-		goto error;
+		return false;
 
 	/* Make sure we have a valid controller before we proceed */
 	if ((conf->ctrl_mode == LIGHT_CTRL_ALL) || conf->ctrl || ctrl_auto(conf))
 		return true;
 
-error:
-	light_free(conf);
 	return false;
 }

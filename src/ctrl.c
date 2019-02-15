@@ -48,7 +48,7 @@ char *ctrl_iter_next(DIR * dir)
  *
  * Returns: best controller, or NULL if no suitable controller is found
  **/
-bool ctrl_auto(light_conf_t *conf)
+bool ctrl_auto(struct light_conf *conf)
 {
 	char *next, *prev;
 	__burndir DIR *dir = opendir(conf->sys_prefix);

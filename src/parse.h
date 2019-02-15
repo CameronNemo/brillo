@@ -3,6 +3,6 @@
 
 #include "light.h"
 
-light_conf_t *parse_args(int argc, char **argv);
+struct light_conf *parse_args(int argc, char **argv);
 
 #endif /* PARSE_H */

@@ -12,12 +12,12 @@
  *
  * Returns: light configuration object, or NULL on memory error
  **/
-light_conf_t *light_new()
+struct light_conf *light_new()
 {
-	light_conf_t *conf = NULL;
+	struct light_conf *conf = NULL;
 
 	errno = 0;
-	if (!(conf = malloc(sizeof(light_conf_t)))) {
+	if (!(conf = malloc(sizeof(struct light_conf)))) {
 		LIGHT_ERR("malloc: %s", strerror(errno));
 		errno = 0;
 		return NULL;
@@ -47,7 +47,7 @@ light_conf_t *light_new()
  *
  * Returns: void
  **/
-void light_defaults(light_conf_t *conf)
+void light_defaults(struct light_conf *conf)
 {
 	if (conf->ctrl_mode == 0)
 		conf->ctrl_mode = LIGHT_CTRL_AUTO;
@@ -63,32 +63,4 @@ void light_defaults(light_conf_t *conf)
 
 	if (conf->field == 0)
 		conf->field = LIGHT_BRIGHTNESS;
-}
-
-/**
- * light_free:
- * @conf:	configuration object to free
- *
- * Free the conf object and its string pointers.
- **/
-void light_free(light_conf_t *conf)
-{
-	char *c;
-
-	if (!conf)
-		return;
-
-	c = conf->ctrl;
-	if (c)
-		free(c);
-
-	c = conf->sys_prefix;
-	if (c)
-		free(c);
-
-	c = conf->cache_prefix;
-	if (c)
-		free(c);
-
-	free(conf);
 }

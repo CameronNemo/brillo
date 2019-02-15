@@ -10,9 +10,9 @@
 #include "file.h"
 #include "exec.h"
 
-static int64_t exec_get_min(light_conf_t *conf);
-static bool exec_write(light_conf_t *conf, LIGHT_FIELD field, int64_t val_old, int64_t val_new);
-static bool exec_restore(light_conf_t *conf, int64_t max, int64_t mincap);
+static int64_t exec_get_min(struct light_conf *conf);
+static bool exec_write(struct light_conf *conf, LIGHT_FIELD field, int64_t val_old, int64_t val_new);
+static bool exec_restore(struct light_conf *conf, int64_t max, int64_t mincap);
 
 /**
  * exec_init:
@@ -21,7 +21,7 @@ static bool exec_restore(light_conf_t *conf, int64_t max, int64_t mincap);
  *
  * Returns: true on success, false on failure
  **/
-static bool exec_init(light_conf_t *conf,
+static bool exec_init(struct light_conf *conf,
 		int64_t * curr, int64_t * max, int64_t * mincap)
 {
 	if (conf->cached_max != 0) {
@@ -69,7 +69,7 @@ static bool exec_init(light_conf_t *conf,
  *
  * Returns: an fd on success, negative value on failure
  **/
-static int exec_open(light_conf_t *conf, LIGHT_FIELD field, int flags)
+static int exec_open(struct light_conf *conf, LIGHT_FIELD field, int flags)
 {
 	__burno char *path = light_path_new(conf, field);
 	return path ? file_open(path, flags) : -1;
@@ -129,7 +129,7 @@ static bool exec_get(LIGHT_FIELD field, LIGHT_VAL_MODE mode,
  *
  * Returns: true on success, false on failure
  **/
-static bool exec_set(light_conf_t *conf, int64_t max, int64_t mincap)
+static bool exec_set(struct light_conf *conf, int64_t max, int64_t mincap)
 {
 	int64_t new_value, curr_value, new_raw, curr_raw;
 	__burnfd int fd = exec_open(conf, conf->field, O_WRONLY);
@@ -186,7 +186,7 @@ static bool exec_set(light_conf_t *conf, int64_t max, int64_t mincap)
  *
  * Returns: true on success, false on failure
  **/
-bool exec_all(light_conf_t *conf)
+bool exec_all(struct light_conf *conf)
 {
 	bool ret = true;
 	__burndir DIR *dir = opendir(conf->sys_prefix);
@@ -218,7 +218,7 @@ bool exec_all(light_conf_t *conf)
  *
  * Returns: true on success, false on failure
  **/
-bool exec_op(light_conf_t *conf)
+bool exec_op(struct light_conf *conf)
 {
 	int64_t curr;	/* The current brightness, in raw units */
 	int64_t max;	/* The max brightness, in raw units */
@@ -272,7 +272,7 @@ bool exec_op(light_conf_t *conf)
  *
  * Returns: the generated path, or NULL on failure
  **/
-char *light_path_new(light_conf_t *conf, LIGHT_FIELD type)
+char *light_path_new(struct light_conf *conf, LIGHT_FIELD type)
 {
 	char *p;
 	const char *fmt, *prefix;
@@ -319,7 +319,7 @@ char *light_path_new(light_conf_t *conf, LIGHT_FIELD type)
  *
  * Returns: value on success, -errno on failure
  **/
-int64_t light_fetch(light_conf_t *conf, LIGHT_FIELD field)
+int64_t light_fetch(struct light_conf *conf, LIGHT_FIELD field)
 {
 	__burno char *path = light_path_new(conf, field);
 	return path ? file_read(path) : -ENOMEM;
@@ -336,7 +336,7 @@ int64_t light_fetch(light_conf_t *conf, LIGHT_FIELD field)
  *
  * Returns: true if write was successful, otherwise false
  **/
-static bool exec_write(light_conf_t *conf, LIGHT_FIELD field,
+static bool exec_write(struct light_conf *conf, LIGHT_FIELD field,
 		int64_t val_old, int64_t val_new)
 {
 	__burnfd int fd = exec_open(conf, field, O_WRONLY);
@@ -349,7 +349,7 @@ static bool exec_write(light_conf_t *conf, LIGHT_FIELD field,
  *
  * Returns: the mincap if it is available, otherwise 0
  **/
-static int64_t exec_get_min(light_conf_t *conf)
+static int64_t exec_get_min(struct light_conf *conf)
 {
 	int64_t mincap = light_fetch(conf, LIGHT_MIN_CAP);
 	return mincap >= 0 ? mincap : 0;
@@ -363,7 +363,7 @@ static int64_t exec_get_min(light_conf_t *conf)
  *
  * Returns: true if write was successful, otherwise false
  **/
-static bool exec_restore(light_conf_t *conf, int64_t max, int64_t mincap)
+static bool exec_restore(struct light_conf *conf, int64_t max, int64_t mincap)
 {
 	int64_t val = light_fetch(conf, LIGHT_SAVERESTORE);
 

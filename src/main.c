@@ -8,24 +8,22 @@
 
 int main(int argc, char **argv)
 {
-	light_conf_t *light_conf = NULL;
+	__lightburn struct light_conf *ctx = NULL;
 
-	if (!(light_conf = parse_args(argc, argv))) {
+	if (!(ctx = parse_args(argc, argv))) {
 		LIGHT_ERR("Arguments parsing failed");
 		return 2;
 	}
 
-	if (!(init_strings(light_conf))) {
+	if (!(init_strings(ctx))) {
 		LIGHT_ERR("Initialization failed");
 		return EXIT_FAILURE;
 	}
 
-	if (!exec_op(light_conf)) {
-		light_free(light_conf);
+	if (!exec_op(ctx)) {
 		LIGHT_ERR("Execution failed");
 		return EXIT_FAILURE;
 	}
 
-	light_free(light_conf);
 	return EXIT_SUCCESS;
 }

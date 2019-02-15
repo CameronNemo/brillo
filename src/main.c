@@ -6,20 +6,18 @@
 #include "init.h"
 #include "exec.h"
 
-#define LIGHT_RETURNVAL_INITFAIL  2
-
 int main(int argc, char **argv)
 {
 	light_conf_t *light_conf = NULL;
 
 	if (!(light_conf = parse_args(argc, argv))) {
 		LIGHT_ERR("Arguments parsing failed");
-		return LIGHT_RETURNVAL_INITFAIL;
+		return 2;
 	}
 
 	if (!(init_strings(light_conf))) {
 		LIGHT_ERR("Initialization failed");
-		return LIGHT_RETURNVAL_INITFAIL;
+		return EXIT_FAILURE;
 	}
 
 	if (!exec_op(light_conf)) {

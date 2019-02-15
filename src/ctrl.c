@@ -1,4 +1,6 @@
 #include "common.h"
+
+#include "burno.h"
 #include "log.h"
 #include "light.h"
 #include "exec.h"
@@ -48,12 +50,10 @@ char *ctrl_iter_next(DIR * dir)
  **/
 bool ctrl_auto(light_conf_t *conf)
 {
-	DIR *dir;
 	char *next, *prev;
+	__burndir DIR *dir = opendir(conf->sys_prefix);
 
-	LIGHT_NOTE("finding best controller...");
-
-	if (!(dir = opendir(conf->sys_prefix))) {
+	if (!dir) {
 		LIGHT_ERR("opendir: %s", strerror(errno));
 		return false;
 	}
@@ -82,12 +82,9 @@ bool ctrl_auto(light_conf_t *conf)
 		free(next);
 	}
 
-	closedir(dir);
+	if (conf->ctrl)
+		return true;
 
-	if (!conf->ctrl) {
-		LIGHT_ERR("could not find an accessible controller");
-		return false;
-	}
-
-	return true;
+	LIGHT_ERR("could not find an accessible controller");
+	return false;
 }

@@ -1,4 +1,6 @@
 #include "common.h"
+
+#include "burno.h"
 #include "log.h"
 #include "path.h"
 #include "info.h"
@@ -10,7 +12,7 @@
 
 static int64_t exec_get_min(light_conf_t *conf);
 static bool exec_write(light_conf_t *conf, LIGHT_FIELD field, int64_t val_old, int64_t val_new);
-static bool exec_restore(light_conf_t *conf);
+static bool exec_restore(light_conf_t *conf, int64_t max, int64_t mincap);
 
 /**
  * exec_init:
@@ -65,20 +67,12 @@ static bool exec_init(light_conf_t *conf,
  *
  * Opens a given field with the flags specified.
  *
- * Returns: fd on success, negative value on failure
+ * Returns: an fd on success, negative value on failure
  **/
 static int exec_open(light_conf_t *conf, LIGHT_FIELD field, int flags)
 {
-	int fd;
-	char *path;
-
-	if (!(path = light_path_new(conf, field)))
-		return -1;
-
-	fd = file_open(path, flags);
-	free(path);
-
-	return fd;
+	__burno char *path = light_path_new(conf, field);
+	return path ? file_open(path, flags) : -1;
 }
 
 /**
@@ -137,10 +131,10 @@ static bool exec_get(LIGHT_FIELD field, LIGHT_VAL_MODE mode,
  **/
 static bool exec_set(light_conf_t *conf, int64_t max, int64_t mincap)
 {
-	int fd;
 	int64_t new_value, curr_value, new_raw, curr_raw;
+	__burnfd int fd = exec_open(conf, conf->field, O_WRONLY);
 
-	if ((fd = exec_open(conf, conf->field, O_WRONLY)) < 0)
+	if ((fd) < 0)
 		return false;
 
 	if ((curr_raw = light_fetch(conf, conf->field)) < 0)
@@ -195,9 +189,7 @@ static bool exec_set(light_conf_t *conf, int64_t max, int64_t mincap)
 bool exec_all(light_conf_t *conf)
 {
 	bool ret = true;
-	DIR *dir;
-
-	dir = opendir(conf->sys_prefix);
+	__burndir DIR *dir = opendir(conf->sys_prefix);
 
 	if (!dir) {
 		LIGHT_ERR("opendir: %s", strerror(errno));
@@ -215,7 +207,6 @@ bool exec_all(light_conf_t *conf)
 		free(conf->ctrl);
 	}
 
-	closedir(dir);
 	return ret;
 }
 
@@ -250,9 +241,7 @@ bool exec_op(light_conf_t *conf)
 	case LIGHT_SAVE:
 		return exec_write(conf, LIGHT_SAVERESTORE, curr, curr);
 	case LIGHT_RESTORE:
-		if (!exec_restore(conf))
-			return false;
-		/* FALLTHRU */
+		return exec_restore(conf, max, mincap);
 	case LIGHT_SET:
 	case LIGHT_SUB:
 	case LIGHT_ADD:
@@ -332,17 +321,8 @@ char *light_path_new(light_conf_t *conf, LIGHT_FIELD type)
  **/
 int64_t light_fetch(light_conf_t *conf, LIGHT_FIELD field)
 {
-	char *path;
-	int64_t ret;
-
-	if (!(path = light_path_new(conf, field)))
-		return -ENOMEM;
-
-	LIGHT_NOTE("fetching value from '%s'", path);
-
-	ret = file_read(path);
-	free(path);
-	return ret;
+	__burno char *path = light_path_new(conf, field);
+	return path ? file_read(path) : -ENOMEM;
 }
 
 /**
@@ -359,12 +339,8 @@ int64_t light_fetch(light_conf_t *conf, LIGHT_FIELD field)
 static bool exec_write(light_conf_t *conf, LIGHT_FIELD field,
 		int64_t val_old, int64_t val_new)
 {
-	int fd;
-
-	if ((fd = exec_open(conf, field, O_WRONLY)) < 0)
-		return false;
-
-	return file_write(fd, val_old, val_new, conf->usec);
+	__burnfd int fd = exec_open(conf, field, O_WRONLY);
+	return fd > 0 ? file_write(fd, val_old, val_new, conf->usec) : false;
 }
 
 /**
@@ -375,13 +351,8 @@ static bool exec_write(light_conf_t *conf, LIGHT_FIELD field,
  **/
 static int64_t exec_get_min(light_conf_t *conf)
 {
-	int64_t mincap;
-
-	if ((mincap = light_fetch(conf, LIGHT_MIN_CAP)) >= 0)
-		return mincap;
-
-	LIGHT_NOTE("can't access mincap file, assuming no min");
-	return 0;
+	int64_t mincap = light_fetch(conf, LIGHT_MIN_CAP);
+	return mincap >= 0 ? mincap : 0;
 }
 
 /**
@@ -392,20 +363,13 @@ static int64_t exec_get_min(light_conf_t *conf)
  *
  * Returns: true if write was successful, otherwise false
  **/
-static bool exec_restore(light_conf_t *conf)
+static bool exec_restore(light_conf_t *conf, int64_t max, int64_t mincap)
 {
-	int64_t val = 0;
-
-	LIGHT_NOTE("restoring brightness from saved file");
-
-	if ((val = light_fetch(conf, LIGHT_SAVERESTORE)) < 0) {
-		LIGHT_ERR("could not read saved value");
-		return false;
-	}
+	int64_t val = light_fetch(conf, LIGHT_SAVERESTORE);
 
 	conf->value = val;
 	conf->val_mode = LIGHT_RAW;
 	conf->op_mode = LIGHT_SET;
 
-	return true;
+	return val >= 0 ? exec_set(conf, max, mincap) : false;
 }

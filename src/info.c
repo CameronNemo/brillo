@@ -1,4 +1,6 @@
 #include "common.h"
+
+#include "burno.h"
 #include "log.h"
 #include "ctrl.h"
 #include "light.h"
@@ -15,7 +17,7 @@
  **/
 bool info_list(char *prefix)
 {
-	DIR *dir;
+	__burndir DIR *dir;
 
 	dir = opendir(prefix);
 
@@ -27,7 +29,6 @@ bool info_list(char *prefix)
 	for (char *c; (c = ctrl_iter_next(dir)); free(c))
 		printf("%s\n", c);
 
-	closedir(dir);
 	return true;
 }
 

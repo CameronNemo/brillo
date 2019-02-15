@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <string.h>
 
+#include "burno.h"
 #include "log.h"
 #include "file.h"
 
@@ -130,18 +131,13 @@ bool file_write(int fd, int64_t start, int64_t end, int64_t usec)
 		else
 			next_value = ((start * num_writes) + ((end - start) * i)) / num_writes;
 
-		if (!file_rewrite(fd, next_value)) {
-			close(fd);
+		if (!file_rewrite(fd, next_value))
 			return false;
-		}
 
-		if (!file_write_sleep(SMOOTH_ITER_DURATION, t0)) {
-			close(fd);
+		if (!file_write_sleep(SMOOTH_ITER_DURATION, t0))
 			return false;
-		}
 	}
 
-	close(fd);
 	return true;
 }
 
@@ -184,26 +180,25 @@ int file_open(char const *path, int mode)
  */
 int64_t file_read(char const *path)
 {
-	FILE *file;
 	int64_t value;
 
 	errno = 0;
-	if (!(file = fopen(path, "r"))) {
+	__burnfile FILE *file = fopen(path, "r");
+
+	if (!file) {
 		LIGHT_ERR("fopen: %s: '%s'", strerror(errno), path);
 		return -errno;
 	}
 
 	errno = 0;
 	if (fscanf(file, "%" SCNd64, &value) != 1) {
-		fclose(file);
 		if (errno != 0) {
 			LIGHT_ERR("fscanf: %s: '%s'", strerror(errno), path);
-		} else {
-			LIGHT_ERR("File should contain one number: '%s'", path);
+			return -errno;
 		}
+		LIGHT_ERR("File should contain one number: '%s'", path);
 		return -1;
 	}
 
-	fclose(file);
 	return value;
 }

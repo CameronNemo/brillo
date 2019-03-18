@@ -1,5 +1,5 @@
 #include <stdarg.h>
-#include <linux/limits.h>
+#include <limits.h>
 
 #include "common.h"
 #include "log.h"
@@ -59,7 +59,7 @@ char *path_append(char * const str, const char *fmt, ...)
 
 	r = vsnprintf(str + strlen(str), PATH_MAX - strlen(str), fmt, ap);
 
-	if (r < 0 || r > PATH_MAX) {
+	if (r < 0 || (size_t)r >= (PATH_MAX - strlen(str))) {
 		LIGHT_ERR("snprintf");
 		free(str);
 		va_end(ap);

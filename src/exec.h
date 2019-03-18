@@ -1,6 +1,8 @@
 #ifndef EXEC_H
 #define EXEC_H
 
+#include <stdbool.h>
+
 #include "light.h"
 
 bool exec_op(struct light_conf *conf);

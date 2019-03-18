@@ -1,9 +1,6 @@
 #ifndef LIGHT_HELPERS_H
 #define LIGHT_HELPERS_H
 
-#include <stdint.h>
-#include <inttypes.h>
-#include <stdbool.h>
 #include <stdio.h>
 
 typedef enum {
@@ -27,4 +24,4 @@ light_loglevel_t light_loglevel;
 #define LIGHT_WARN(...)  LIGHT_LOG(LIGHT_WARN_LEVEL,  stderr, "WARN: ", __VA_ARGS__)
 #define LIGHT_ERR(...)   LIGHT_LOG(LIGHT_ERROR_LEVEL, stderr, "!ERR: ", __VA_ARGS__)
 
-#endif				/* LIGHT_HELPERS_H */
+#endif /* LIGHT_HELPERS_H */

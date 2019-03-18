@@ -5,6 +5,8 @@
 #include <time.h>
 #include <errno.h>
 #include <string.h>
+#include <stdbool.h>
+#include <inttypes.h>
 
 #include "burno.h"
 #include "log.h"

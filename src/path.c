@@ -11,11 +11,9 @@
  * Returns: true if c is a valid path component, otherwise false
  **/
 bool path_component(const char *c) {
-	if (c && strnlen(c, NAME_MAX + 1) <= NAME_MAX)
-		return true;
-
-	LIGHT_ERR("invalid path component '%s'", c);
-	return false;
+	if (!c || strnlen(c, NAME_MAX + 1) > NAME_MAX || strchr(c, '/') != NULL)
+		return false;
+	return true;
 }
 
 /**

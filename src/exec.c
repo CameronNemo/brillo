@@ -137,7 +137,12 @@ static bool exec_set(struct light_conf *conf, int64_t max, int64_t mincap)
 	if ((fd) < 0)
 		return false;
 
-	if ((curr_raw = light_fetch(conf, conf->field)) < 0)
+	if (conf->field == LIGHT_MIN_CAP)
+		curr_raw = exec_get_min(conf);
+	else
+		curr_raw = light_fetch(conf, conf->field);
+
+	if (curr_raw < 0)
 		return false;
 
 	new_value = conf->value;

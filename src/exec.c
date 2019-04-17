@@ -12,51 +12,20 @@
 
 static int64_t exec_get_min(struct light_conf *conf);
 static bool exec_write(struct light_conf *conf, LIGHT_FIELD field, int64_t val_old, int64_t val_new);
-static bool exec_restore(struct light_conf *conf, int64_t max, int64_t mincap);
+static bool exec_restore(struct light_conf *conf);
 
 /**
- * exec_init:
+ * exec_get_max:
  *
- * Initializes values needed to execute the requested operation.
+ * Determines max value from cache, or by fetching it.
  *
- * Returns: true on success, false on failure
+ * Returns: negative value on failure, raw max value on success
  **/
-static bool exec_init(struct light_conf *conf,
-		int64_t * curr, int64_t * max, int64_t * mincap)
+static int64_t exec_get_max(struct light_conf *conf)
 {
-	if (conf->cached_max != 0) {
-		*max = conf->cached_max;
-	} else if ((*max = light_fetch(conf, LIGHT_MAX_BRIGHTNESS)) < 0) {
-		LIGHT_ERR("could not get max brightness");
-		return false;
-	}
-
-	/* No need to go further if targetting mincap */
-	if ((conf->field == LIGHT_MIN_CAP &&
-	     conf->op_mode == LIGHT_SET) ||
-	    conf->field == LIGHT_MAX_BRIGHTNESS) {
-		/* Init other values to 0 */
-		*curr = *mincap = 0;
-		return true;
-	}
-
-	if ((*curr = light_fetch(conf, LIGHT_BRIGHTNESS)) < 0) {
-		LIGHT_ERR("could not get brightness");
-		return false;
-	}
-
-	if ((*mincap = exec_get_min(conf)) < 0) {
-		LIGHT_ERR("could not get mincap");
-		return false;
-	}
-
-	if (*mincap > *max) {
-		LIGHT_ERR("invalid mincap value of '%" PRId64 "'", *mincap);
-		LIGHT_ERR("mincap must be inferior to '%" PRId64 "'", *max);
-		return false;
-	}
-
-	return true;
+	if (conf->cached_max != 0)
+		return conf->cached_max;
+	return light_fetch(conf, LIGHT_MAX_BRIGHTNESS);
 }
 
 /**
@@ -77,33 +46,26 @@ static int exec_open(struct light_conf *conf, LIGHT_FIELD field, int flags)
 
 /**
  * exec_get:
- * @field:	field to operate on
- * @mode:	value mode to use
- * @curr:	current raw value
+ * @conf:	configuration object
  * @max:	maximum raw value
- * @mincap:	minimum raw value
  *
  * Executes the get operation, printing the appropriate field to standard out.
  *
  * Returns: true on success, false on failure
  **/
-static bool exec_get(LIGHT_FIELD field, LIGHT_VAL_MODE mode,
-		int64_t curr, int64_t max, int64_t mincap)
+static bool exec_get(struct light_conf *conf)
 {
-	int64_t val;
+	int64_t raw_val, max, val;
 
-	if (max == 0)
-		return false;
-
-	switch (field) {
+	switch (conf->field) {
 	case LIGHT_BRIGHTNESS:
-		val = value_from_raw(mode, curr, max);
+		raw_val = light_fetch(conf, LIGHT_BRIGHTNESS);
 		break;
 	case LIGHT_MAX_BRIGHTNESS:
-		val = value_from_raw(mode, max, max);
+		raw_val = (max = exec_get_max(conf));
 		break;
 	case LIGHT_MIN_CAP:
-		val = value_from_raw(mode, mincap, max);
+		raw_val = exec_get_min(conf);
 		break;
 	case LIGHT_SAVERESTORE:
 		return true;
@@ -111,7 +73,12 @@ static bool exec_get(LIGHT_FIELD field, LIGHT_VAL_MODE mode,
 		return false;
 	}
 
-	if (mode == LIGHT_RAW)
+	if (raw_val < 0)
+		return false;
+
+	val = value_from_raw(conf->val_mode, raw_val, max);
+
+	if (conf->val_mode == LIGHT_RAW)
 		printf("%" PRId64 "\n", val);
 	else
 		printf("%.2f\n", ((double) val / 100.00));
@@ -122,27 +89,32 @@ static bool exec_get(LIGHT_FIELD field, LIGHT_VAL_MODE mode,
 /**
  * exec_set:
  * @conf:	configuration object to operate on
- * @max:	maximum raw value
- * @mincap:	minimum raw value
  *
  * Sets the minimum cap or brightness value.
  *
  * Returns: true on success, false on failure
  **/
-static bool exec_set(struct light_conf *conf, int64_t max, int64_t mincap)
+static bool exec_set(struct light_conf *conf)
 {
-	int64_t new_value, curr_value, new_raw, curr_raw;
+	int64_t new_value, curr_value, new_raw, curr_raw, mincap, max;
 	__burnfd int fd = exec_open(conf, conf->field, O_WRONLY);
 
 	if ((fd) < 0)
 		return false;
 
-	if (conf->field == LIGHT_MIN_CAP)
+	if (conf->field == LIGHT_MIN_CAP) {
+		/* set the bottom clamp to 0 */
+		mincap = 0;
 		curr_raw = exec_get_min(conf);
-	else
+	} else {
+		mincap = exec_get_min(conf);
 		curr_raw = light_fetch(conf, conf->field);
+	}
 
 	if (curr_raw < 0)
+		return false;
+
+	if ((max = exec_get_max(conf)) < 0)
 		return false;
 
 	new_value = conf->value;
@@ -216,6 +188,20 @@ bool exec_all(struct light_conf *conf)
 }
 
 /**
+ * exec_save:
+ * @conf:	configuration object
+ *
+ * Saves current value to the cache file.
+ **/
+static bool exec_save(struct light_conf *conf)
+{
+	int64_t curr = light_fetch(conf, LIGHT_BRIGHTNESS);
+	if (curr < 0)
+		return false;
+	return exec_write(conf, LIGHT_SAVERESTORE, curr, curr);
+}
+
+/**
  * exec_op:
  * @conf:	configuration object to operate on
  *
@@ -225,32 +211,25 @@ bool exec_all(struct light_conf *conf)
  **/
 bool exec_op(struct light_conf *conf)
 {
-	int64_t curr;	/* The current brightness, in raw units */
-	int64_t max;	/* The max brightness, in raw units */
-	int64_t mincap;	/* The minimum cap, in raw units */
-
 	if (info_print(conf->op_mode, conf->sys_prefix, false))
 		return info_print(conf->op_mode, conf->sys_prefix, true);
 
 	if (conf->ctrl_mode == LIGHT_CTRL_ALL)
 		return exec_all(conf);
 
-	if (!exec_init(conf, &curr, &max, &mincap))
-		return false;
-
 	LIGHT_NOTE("executing light on '%s' controller", conf->ctrl);
 
 	switch (conf->op_mode) {
-	case LIGHT_GET:
-		return exec_get(conf->field, conf->val_mode, curr, max, mincap);
 	case LIGHT_SAVE:
-		return exec_write(conf, LIGHT_SAVERESTORE, curr, curr);
+		return exec_save(conf);
+	case LIGHT_GET:
+		return exec_get(conf);
 	case LIGHT_RESTORE:
-		return exec_restore(conf, max, mincap);
+		return exec_restore(conf);
 	case LIGHT_SET:
 	case LIGHT_SUB:
 	case LIGHT_ADD:
-		return exec_set(conf, max, mincap);
+		return exec_set(conf);
 	default:
 		/* Should not be reached */
 		fprintf(stderr,
@@ -368,7 +347,7 @@ static int64_t exec_get_min(struct light_conf *conf)
  *
  * Returns: true if write was successful, otherwise false
  **/
-static bool exec_restore(struct light_conf *conf, int64_t max, int64_t mincap)
+static bool exec_restore(struct light_conf *conf)
 {
 	int64_t val = light_fetch(conf, LIGHT_SAVERESTORE);
 
@@ -376,5 +355,5 @@ static bool exec_restore(struct light_conf *conf, int64_t max, int64_t mincap)
 	conf->val_mode = LIGHT_RAW;
 	conf->op_mode = LIGHT_SET;
 
-	return val >= 0 ? exec_set(conf, max, mincap) : false;
+	return val >= 0 ? exec_set(conf) : false;
 }

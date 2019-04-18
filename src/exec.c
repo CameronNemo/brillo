@@ -55,14 +55,17 @@ static int exec_open(struct light_conf *conf, LIGHT_FIELD field, int flags)
  **/
 static bool exec_get(struct light_conf *conf)
 {
-	int64_t raw_val, max, val;
+	int64_t raw_val, val, max;
+
+	if ((max = exec_get_max(conf)) < 0)
+		return false;
 
 	switch (conf->field) {
 	case LIGHT_BRIGHTNESS:
 		raw_val = light_fetch(conf, LIGHT_BRIGHTNESS);
 		break;
 	case LIGHT_MAX_BRIGHTNESS:
-		raw_val = (max = exec_get_max(conf));
+		raw_val = max;
 		break;
 	case LIGHT_MIN_CAP:
 		raw_val = exec_get_min(conf);
@@ -96,20 +99,19 @@ static bool exec_get(struct light_conf *conf)
  **/
 static bool exec_set(struct light_conf *conf)
 {
-	int64_t new_value, curr_value, new_raw, curr_raw, mincap, max;
-	__burnfd int fd = exec_open(conf, conf->field, O_WRONLY);
+	int64_t new_value, curr_value, new_raw, max, curr_raw = -1, mincap = 0;
+	__burnfd int fd;
 
-	if ((fd) < 0)
+	if (conf->field == LIGHT_MIN_CAP)
+		curr_raw = exec_get_min(conf);
+	else
+		mincap = exec_get_min(conf);
+
+	if ((fd = exec_open(conf, conf->field, O_WRONLY)) < 0)
 		return false;
 
-	if (conf->field == LIGHT_MIN_CAP) {
-		/* set the bottom clamp to 0 */
-		mincap = 0;
-		curr_raw = exec_get_min(conf);
-	} else {
-		mincap = exec_get_min(conf);
+	if (conf->field != LIGHT_MIN_CAP)
 		curr_raw = light_fetch(conf, conf->field);
-	}
 
 	if (curr_raw < 0)
 		return false;

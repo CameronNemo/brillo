@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-3.0-only */
+
 #ifndef EXEC_H
 #define EXEC_H
 

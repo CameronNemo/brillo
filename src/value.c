@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: 0BSD */
+
 #include <inttypes.h>
 #include <math.h>
 

@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: 0BSD */
+
 #ifndef VALUE_H
 #define VALUE_H
 

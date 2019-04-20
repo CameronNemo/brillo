@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: 0BSD */
+
 #ifndef FILE_H
 #define FILE_H
 

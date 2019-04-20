@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-3.0-only */
+
 #ifndef PARSE_H
 #define PARSE_H
 

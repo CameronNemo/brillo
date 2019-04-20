@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: 0BSD */
+
 #ifndef PATH_H
 #define PATH_H
 

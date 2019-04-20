@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-3.0-only */
+
 #ifndef INFO_H
 #define INFO_H
 

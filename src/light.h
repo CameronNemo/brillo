@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-3.0-only */
+
 #ifndef LIGHT_H
 #define LIGHT_H
 

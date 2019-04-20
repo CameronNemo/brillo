@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: MIT */
+/* SPDX-License-Identifier: 0BSD */
 
 #ifndef __BURNO_H
 #define __BURNO_H

@@ -64,7 +64,7 @@ install.udev: build/92-$(VENDOR).$(PROG).rules
 	install -d $(DESTDIR)$(UDEVRULESDIR)
 	install -m 00644 -t $(DESTDIR)$(UDEVRULESDIR) $^
 
-install.common: install.apparmor install.man install.udev
+install.common: install.man install.udev
 
 install: install.bin install.common
 

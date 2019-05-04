@@ -92,14 +92,10 @@ should take. This flag is silently ignored when not setting the brightness.
 
 *Verbosity*
 
-By default, **brillo** outputs zero debugging information. To enable logs
-on **stderr**, use the verbosity argument: **-v** *loglevel*. The loglevel
-is a value between 0 and 3, corresponding to the following priorities:
-
-* **0**:	No debug output (default)
-* **1**:	Errors
-* **2**:	Errors, warnings
-* **3**:	Errors, warnings, notices
+By default, **brillo** outputs only warnings or more severe messages.
+To enable more verbose logs on **stderr**, use the verbosity argument:
+**-v** *loglevel*.
+The loglevel is a value between 0 and 8 (corresponding to syslog severities).
 
 # EXAMPLES
 
@@ -150,7 +146,7 @@ Activate a specific controller LED:
 
 # COPYRIGHT
 
-Copyright (C) 2018 Cameron Nemo, 2014 Fredrik Haikarainen
+Copyright (C) 2018-2019 Cameron Nemo, 2014 Fredrik Haikarainen
 
 This is free software, see the source for copying conditions.  There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE

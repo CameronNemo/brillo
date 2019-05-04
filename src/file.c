@@ -183,7 +183,9 @@ int64_t file_read(const char *const path)
 	errno = 0;
 	if (fscanf(file, "%" SCNd64, &value) != 1) {
 		if (errno == 0)
+			/* cppcheck-suppress resourceLeak */
 			return -EINVAL;
+		/* cppcheck-suppress resourceLeak */
 		return -errno;
 	}
 

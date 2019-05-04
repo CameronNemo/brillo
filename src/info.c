@@ -74,7 +74,7 @@ bool info_print(LIGHT_OP_MODE op, char *prefix, bool exec)
  **/
 void info_print_version()
 {
-	printf("%s %s\n", LIGHT_PROG, LIGHT_VER);
+	printf("%s %s\n", PROG, VERSION);
 }
 
 /**
@@ -84,6 +84,6 @@ void info_print_version()
  **/
 void *info_print_help()
 {
-	printf("Usage: %s [options] [operation [value]]\n", LIGHT_PROG);
+	printf("Usage: %s [options] [operation [value]]\n", PROG);
 	return NULL;
 }

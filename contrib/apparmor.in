@@ -1,0 +1,25 @@
+# vim:syntax=apparmor
+
+#include <tunables/global>
+
+profile @vendor@.@prog@ /{,usr/}{,local/}bin/@prog@ {
+  #include <abstractions/base>
+
+  capability dac_override,
+  capability dac_read_search,
+
+  /{,usr/}{,local/}bin/@prog@ mixr,
+  /var/cache/@prog@ rw,
+  /var/cache/@prog@/** rwk,
+
+  # unpriveleged mode
+  owner @{HOME}/.cache/@prog@ rw,
+  owner @{HOME}/.cache/@prog@/** rwk,
+
+  /sys/class/{backlight,leds}/ r,
+  /sys/devices/**/brightness rwk,
+  /sys/devices/**/max_brightness r,
+
+  # Site-specific additions and overrides. See local/README for details.
+  #include if exists <local/@vendor@.@prog@>
+}

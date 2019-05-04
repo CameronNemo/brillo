@@ -1,4 +1,3 @@
+*~
 *.o
-brillo
-brillo.1
-contrib/*brillo.policy
+/build

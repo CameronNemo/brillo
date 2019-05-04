@@ -45,9 +45,9 @@ static char *init_cache(const char * const tgt)
 
 	if ((geteuid() == 0 && (env = "/var/cache")) || 
 	    (env = getenv("XDG_CACHE_HOME")))
-		dirfmt = "%s/" LIGHT_PROG;
+		dirfmt = "%s/" PROG;
 	else if ((env = getenv("HOME")))
-		dirfmt = "%s/.cache/" LIGHT_PROG;
+		dirfmt = "%s/.cache/" PROG;
 
 	if (!env) {
 		vlog_err("XDG/HOME env vars not set, failed to init cache");

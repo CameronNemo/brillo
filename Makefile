@@ -1,7 +1,7 @@
 PROG := brillo
 DESC := Control the brightness of backlight and keyboard LED devices
 VENDOR := com.gitlab.CameronNemo
-VERSION := 1.4.7
+VERSION := 1.4.8
 
 GOMD2MAN ?= go-md2man
 GROUP ?= video
@@ -14,12 +14,12 @@ MANDIR ?= $(PREFIX)/share/man/man1
 PKEDIR ?= $(PREFIX)/share/polkit-1/actions
 UDEVRULESDIR ?= $(PREFIX)/lib/udev/rules.d
 
-CFLAGS := $(CFLAGS) \
+override CFLAGS += \
 	-std=c99 -D_XOPEN_SOURCE=700 -pedantic \
 	-Wall -Werror -Wextra \
 	-DPROG='"$(PROG)"' -DVERSION='"$(VERSION)"'
 
-LDLIBS := $(LDLIBS) -lm
+override LDLIBS += -lm
 
 SRC = \
 	src/vlog.c \

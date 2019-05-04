@@ -1,9 +1,11 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 
+#include <string.h>
+
 #include "common.h"
 
 #include "burno.h"
-#include "log.h"
+#include "vlog.h"
 #include "light.h"
 #include "exec.h"
 #include "ctrl.h"
@@ -24,7 +26,7 @@ char *ctrl_iter_next(DIR * dir)
 	struct dirent *file;
 
 	if (!dir) {
-		LIGHT_ERR("directory uninitialized");
+		vlog_err("directory uninitialized");
 		return NULL;
 	}
 
@@ -56,7 +58,7 @@ bool ctrl_auto(struct light_conf *conf)
 	__burndir DIR *dir = opendir(conf->sys_prefix);
 
 	if (!dir) {
-		LIGHT_ERR("opendir: %s", strerror(errno));
+		vlog_err("opendir: %m");
 		return false;
 	}
 
@@ -67,26 +69,28 @@ bool ctrl_auto(struct light_conf *conf)
 
 		if ((max = light_fetch(conf, LIGHT_MAX_BRIGHTNESS)) > 0) {
 			if (max > conf->cached_max) {
-				LIGHT_NOTE("found (better) controller '%s'", next);
+				vlog_debug("found (better) controller '%s'", next);
 				conf->cached_max = max;
 				if (prev)
 					free(prev);
 				continue;
 			} else {
-				LIGHT_NOTE("found worse controller '%s'", next);
+				vlog_notice("found worse controller '%s'", next);
 				conf->ctrl = prev;
 			}
 		} else {
-			LIGHT_WARN("found inaccessible controller '%s'", next);
+			vlog_warning("found inaccessible controller '%s'", next);
 			conf->ctrl = prev;
 		}
 
 		free(next);
 	}
 
-	if (conf->ctrl)
+	if (conf->ctrl) {
+		vlog_notice("automatically chose controller: '%s'", conf->ctrl);
 		return true;
+	}
 
-	LIGHT_ERR("could not find an accessible controller");
+	vlog_err("could not find an accessible controller");
 	return false;
 }

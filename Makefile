@@ -14,6 +14,7 @@ UDEVDIR=$(DESTDIR)$(PREFIX)/lib/udev/rules.d
 AADIR=$(DESTDIR)/etc/apparmor.d
 
 SRC = \
+	src/vlog.c \
 	src/value.c \
 	src/light.c \
 	src/file.c \

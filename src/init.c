@@ -1,9 +1,10 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 
 #include <sys/stat.h>
+#include <errno.h>
 
 #include "common.h"
-#include "log.h"
+#include "vlog.h"
 #include "path.h"
 #include "info.h"
 #include "ctrl.h"
@@ -49,7 +50,7 @@ static char *init_cache(const char * const tgt)
 		dirfmt = "%s/.cache/" LIGHT_PROG;
 
 	if (!env) {
-		LIGHT_ERR("XDG/HOME env vars not set, failed to init cache");
+		vlog_err("XDG/HOME env vars not set, failed to init cache");
 		return NULL;
 	}
 
@@ -64,7 +65,7 @@ static char *init_cache(const char * const tgt)
 
 	/* warn now, the exec will fail later if necessary */
 	if (r != 0 && errno != EEXIST)
-		LIGHT_WARN("mkdir: %s", strerror(errno));
+		vlog_warning("mkdir: %m");
 
 	return path_append(s, "/%s", tgt);
 }

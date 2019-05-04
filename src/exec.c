@@ -1,9 +1,11 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 
+#include <errno.h>
+
 #include "common.h"
 
 #include "burno.h"
-#include "log.h"
+#include "vlog.h"
 #include "path.h"
 #include "info.h"
 #include "ctrl.h"
@@ -123,8 +125,8 @@ static bool exec_set(struct light_conf *conf)
 
 	new_value = conf->value;
 	curr_value = value_from_raw(conf->val_mode, curr_raw, max);
-	LIGHT_NOTE("specified value: %" PRId64, new_value);
-	LIGHT_NOTE("current value: %" PRId64, curr_value);
+	vlog_notice("specified value: %" PRId64, new_value);
+	vlog_notice("current value: %" PRId64, curr_value);
 
 	if (conf->field == LIGHT_BRIGHTNESS) {
 		switch (conf->op_mode) {
@@ -173,7 +175,7 @@ bool exec_all(struct light_conf *conf)
 	__burndir DIR *dir = opendir(conf->sys_prefix);
 
 	if (!dir) {
-		LIGHT_ERR("opendir: %s", strerror(errno));
+		vlog_err("opendir: %m");
 		return false;
 	}
 
@@ -221,7 +223,7 @@ bool exec_op(struct light_conf *conf)
 	if (conf->ctrl_mode == LIGHT_CTRL_ALL)
 		return exec_all(conf);
 
-	LIGHT_NOTE("executing light on '%s' controller", conf->ctrl);
+	vlog_notice("executing light on '%s' controller", conf->ctrl);
 
 	switch (conf->op_mode) {
 	case LIGHT_SAVE:
@@ -340,7 +342,12 @@ static bool exec_write(struct light_conf *conf, LIGHT_FIELD field,
 static int64_t exec_get_min(struct light_conf *conf)
 {
 	int64_t mincap = light_fetch(conf, LIGHT_MIN_CAP);
-	return mincap >= 0 ? mincap : 0;
+	if (mincap == -ENOENT)
+		mincap = 1;
+	if (mincap >= 0)
+		return mincap;
+	vlog_err("fetching mincap value: %m");
+	return 0;
 }
 
 /**

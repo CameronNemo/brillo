@@ -3,7 +3,7 @@
 #include "common.h"
 
 #include "burno.h"
-#include "log.h"
+#include "vlog.h"
 #include "ctrl.h"
 #include "light.h"
 #include "info.h"
@@ -24,7 +24,7 @@ bool info_list(char *prefix)
 	dir = opendir(prefix);
 
 	if (!dir) {
-		LIGHT_ERR("opendir: %s", strerror(errno));
+		vlog_err("opendir: %m");
 		return false;
 	}
 

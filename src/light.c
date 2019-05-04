@@ -1,11 +1,10 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 
 #include <stdlib.h>
-#include <errno.h>
-#include <string.h>
+#include <stdio.h>
 
 #include "light.h"
-#include "log.h"
+#include "vlog.h"
 
 /**
  * light_new:
@@ -18,10 +17,8 @@ struct light_conf *light_new()
 {
 	struct light_conf *conf = NULL;
 
-	errno = 0;
 	if (!(conf = malloc(sizeof(struct light_conf)))) {
-		LIGHT_ERR("malloc: %s", strerror(errno));
-		errno = 0;
+		vlog_err("malloc: %m");
 		return NULL;
 	}
 

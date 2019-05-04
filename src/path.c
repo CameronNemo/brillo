@@ -2,9 +2,10 @@
 
 #include <stdarg.h>
 #include <limits.h>
+#include <string.h>
 
 #include "common.h"
-#include "log.h"
+#include "vlog.h"
 
 /**
  * path_component:
@@ -27,10 +28,8 @@ char *path_new()
 {
 	char *p;
 
-	errno = 0;
 	if (!(p = malloc(PATH_MAX))) {
-		LIGHT_ERR("malloc: %s", strerror(errno));
-		errno = 0;
+		vlog_err("malloc: %m");
 		return NULL;
 	}
 
@@ -60,7 +59,7 @@ char *path_append(char * const str, const char *fmt, ...)
 	r = vsnprintf(str + strlen(str), PATH_MAX - strlen(str), fmt, ap);
 
 	if (r < 0 || (size_t)r >= (PATH_MAX - strlen(str))) {
-		LIGHT_ERR("snprintf");
+		vlog_err("snprintf");
 		free(str);
 		va_end(ap);
 		return NULL;

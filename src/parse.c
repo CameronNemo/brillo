@@ -1,9 +1,10 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 
 #include <getopt.h>
+#include <string.h>
 
 #include "common.h"
-#include "log.h"
+#include "vlog.h"
 #include "path.h"
 #include "info.h"
 #include "ctrl.h"
@@ -45,12 +46,12 @@ static bool parse_check(LIGHT_OP_MODE op, LIGHT_FIELD field)
 	case LIGHT_MAX_BRIGHTNESS:
 		if (op == LIGHT_GET)
 			return true;
-		fprintf(stderr, "You can only use -G with the brightness field.\n\n");
+		vlog_err("only use -G with the max brightness field");
 		return false;
 	case LIGHT_MIN_CAP:
 		if (op == LIGHT_GET || op == LIGHT_SET)
 			return true;
-		fprintf(stderr, "You can only use -G or -S with the min cap field.\n\n");
+		vlog_err("only use -G or -S with the min cap field");
 		return false;
 	default:
 		return true;
@@ -73,7 +74,7 @@ struct light_conf *parse_args(int argc, char **argv)
 	struct light_conf *ctx = NULL;
 	char *value = NULL, *ctrl = NULL;
 
-	level = 0;
+	level = -1;
 
 	if (!(ctx = light_new()))
 		return NULL;
@@ -157,17 +158,17 @@ struct light_conf *parse_args(int argc, char **argv)
 			/* -- Other -- */
 		case 'v':
 			if (sscanf(optarg, "%i", &level) != 1) {
-				fprintf(stderr, "verbosity not recognizable.\n");
+				vlog_err("verbosity not recognizable");
 				goto error;
 			}
-			if (level < 0 || level > 3) {
-				fprintf(stderr, "verbosity must be in range 0-3.\n");
+			if (level < 0 || level > 8) {
+				vlog_err("verbosity must be in range 0-8");
 				goto error;
 			}
 			break;
 		case 'u':
 			if (sscanf(optarg, "%" SCNd64, &ctx->usec) != 1) {
-				fprintf(stderr,	"usecs not recognizable.\n");
+				vlog_err("usecs not recognizable");
 				goto error;
 			}
 			break;
@@ -176,7 +177,8 @@ struct light_conf *parse_args(int argc, char **argv)
 		}
 	}
 
-	light_loglevel = (light_loglevel_t) level;
+	if (level >= 0)
+		vlog_lvl_set((vlog_lvl_t) level);
 
 	light_defaults(ctx);
 
@@ -184,18 +186,18 @@ struct light_conf *parse_args(int argc, char **argv)
 		goto error;
 
 	if (ctx->field != LIGHT_BRIGHTNESS && ctx->usec != 0) {
-		LIGHT_WARN("Resetting time to zero for non-brightness field");
+		vlog_warning("Resetting time to zero for non-brightness field");
 		ctx->usec = 0;
 	}
 
 	if (value &&
 	    (ctx->value = value_from_string(ctx->val_mode, value)) < 0) {
-		fprintf(stderr, "value not recognizable.\n");
+		vlog_err("value not recognizable");
 		goto error;
 	}
 
 	if (ctrl && (!path_component(ctrl) || !(ctx->ctrl = strdup(ctrl)))) {
-		fprintf(stderr, "can't handle controller: '%s'\n", ctrl);
+		vlog_err("can't handle controller: '%s'", ctrl);
 		goto error;
 	}
 

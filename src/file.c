@@ -6,12 +6,11 @@
 #include <unistd.h>
 #include <time.h>
 #include <errno.h>
-#include <string.h>
 #include <stdbool.h>
 #include <inttypes.h>
 
 #include "burno.h"
-#include "log.h"
+#include "vlog.h"
 #include "file.h"
 
 #define FILE_MODE_DEFAULT (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)
@@ -37,15 +36,13 @@ static bool file_write_sleep(long nsec, struct timespec t0)
 	t_sleep.tv_nsec = nsec;
 
 	/* get current time so that we can compare to t0 */
-	errno = 0;
 	if (clock_gettime(CLOCK_MONOTONIC_RAW, &t1) < 0) {
-		LIGHT_ERR("clock_gettime: %s", strerror(errno));
-		errno = 0;
+		vlog_err("clock_gettime: %m");
 		return false;
 	}
 
 	if ((t1.tv_sec - t0.tv_sec) > 1) {
-		LIGHT_WARN("time diff greater than 1 second, skipping sleep");
+		vlog_warning("time diff greater than 1 second, skipping sleep");
 		return true;
 	}
 
@@ -61,10 +58,8 @@ static bool file_write_sleep(long nsec, struct timespec t0)
 	if (t_sleep.tv_nsec >= 1e9)
 		t_sleep.tv_nsec = 1e9 - 1;
 
-	errno = 0;
 	if (nanosleep(&t_sleep, NULL) < 0) {
-		LIGHT_ERR("nanosleep: %s", strerror(errno));
-		errno = 0;
+		vlog_err("nanosleep: %m");
 		return false;
 	}
 
@@ -85,15 +80,13 @@ static bool file_rewrite(int fd, int64_t val)
 	if (val < 0)
 		val = 0;
 
-	errno = 0;
 	if (ftruncate(fd, 0) < 0) {
-		LIGHT_ERR("ftruncate: %s", strerror(errno));
-		errno = 0;
+		vlog_err("ftruncate: %m");
 		return false;
 	}
 
 	if (dprintf(fd, "%" PRId64, val) < 0) {
-		LIGHT_ERR("dprintf: %" PRId64, val);
+		vlog_err("dprintf: %" PRId64, val);
 		return false;
 	}
 
@@ -119,7 +112,7 @@ bool file_write(int fd, int64_t start, int64_t end, int64_t usec)
 {
 	struct timespec t0;
 
-	LIGHT_NOTE("Writing (raw) value: %" PRId64, end);
+	vlog_notice("Writing (raw) value: %" PRId64, end);
 
 	int64_t num_writes = usec * SMOOTH_WRITES_PER_SECOND / 1e6;
 
@@ -154,21 +147,17 @@ bool file_write(int fd, int64_t start, int64_t end, int64_t usec)
  *
  * Returns: an fd for the path on success, -1 on failure
  **/
-int file_open(char const *path, int mode)
+int file_open(const char *const path, int mode)
 {
 	int fd;
 
-	errno = 0;
 	if ((fd = open(path, mode | O_TRUNC | O_CREAT | O_SYNC, FILE_MODE_DEFAULT)) < 0) {
-		LIGHT_ERR("open: %s: '%s'", strerror(errno), path);
-		errno = 0;
+		vlog_err("open '%s': %m", path);
 		return -1;
 	}
 
-	errno = 0;
 	if (lockf(fd, F_LOCK, 0) < 0) {
-		LIGHT_ERR("lockf: %s: '%s'", strerror(errno), path);
-		errno = 0;
+		vlog_err("lockf '%s': %m", path);
 		close(fd);
 		return -1;
 	}
@@ -180,26 +169,22 @@ int file_open(char const *path, int mode)
  * file_read:
  * @path:	path to read value from
  *
- * Returns: value, or -1 on error
+ * Returns: value, or -errno on error
  */
-int64_t file_read(char const *path)
+int64_t file_read(const char *const path)
 {
 	int64_t value;
 
-	errno = 0;
 	__burnfile FILE *file = fopen(path, "r");
 
-	if (!file) {
-		LIGHT_ERR("fopen: %s: '%s'", strerror(errno), path);
+	if (!file)
 		return -errno;
-	}
 
 	errno = 0;
 	if (fscanf(file, "%" SCNd64, &value) != 1) {
 		if (errno == 0)
-			errno = EINVAL;
-		LIGHT_ERR("fscanf: %s: '%s'", strerror(errno), path);
-		value = -errno;
+			return -EINVAL;
+		return -errno;
 	}
 
 	/* cppcheck-suppress resourceLeak */

@@ -1,10 +1,11 @@
 /* SPDX-License-Identifier: 0BSD */
 
+#include <stdio.h>
 #include <inttypes.h>
 #include <math.h>
 
 #include "value.h"
-#include "log.h"
+#include "vlog.h"
 
 /**
  * value_clamp:
@@ -17,10 +18,10 @@
 int64_t value_clamp(int64_t val, int64_t min, int64_t max)
 {
 	if (val < min) {
-		LIGHT_WARN("Raising value '%" PRId64 "' to '%" PRId64 "'", val, min);
+		vlog_notice("Raising value '%" PRId64 "' to '%" PRId64 "'", val, min);
 		return min;
 	} else if (val > max) {
-		LIGHT_WARN("Lowering value '%" PRId64 "' to '%" PRId64 "'", val, max);
+		vlog_notice("Lowering value '%" PRId64 "' to '%" PRId64 "'", val, max);
 		return max;
 	} else {
 		return val;

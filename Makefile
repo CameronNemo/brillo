@@ -14,6 +14,24 @@ MANDIR ?= $(PREFIX)/share/man/man1
 PKEDIR ?= $(PREFIX)/share/polkit-1/actions
 UDEVRULESDIR ?= $(PREFIX)/lib/udev/rules.d
 
+ifeq ($(UBSAN),1)
+override CFLAGS += \
+	-fsanitize=undefined \
+	-fsanitize=shift \
+	-fsanitize=unreachable \
+	-fsanitize=vla-bound \
+	-fsanitize=null \
+	-fsanitize=return \
+	-fsanitize=signed-integer-overflow \
+	-fsanitize=integer-divide-by-zero \
+	-fsanitize=float-divide-by-zero \
+	-fsanitize=float-cast-overflow \
+	-fsanitize=bounds \
+	-fsanitize=alignment \
+	-fsanitize=object-size \
+	-fsanitize=vptr
+endif
+
 override CFLAGS += \
 	-std=c99 -D_XOPEN_SOURCE=700 -pedantic \
 	-Wall -Werror -Wextra \

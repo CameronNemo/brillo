@@ -14,7 +14,7 @@
 #define PARSE_SET(str, box, item) \
 	if (box != 0) { \
 		fprintf(stderr, str" arguments can not be used in conjunction.\n"); \
-		goto error; \
+		return info_help(); \
 	} else { \
 		box = item; \
 	}
@@ -68,16 +68,12 @@ static bool parse_check(LIGHT_OP_MODE op, LIGHT_FIELD field)
  *
  * Returns: a valid conf object on success, NULL on failure
  **/
-struct light_conf *parse_args(int argc, char **argv)
+bool parse_args(int argc, char **argv, struct light_conf *ctx)
 {
 	int opt, level;
-	struct light_conf *ctx = NULL;
 	char *value = NULL, *ctrl = NULL;
 
 	level = -1;
-
-	if (!(ctx = light_new()))
-		return NULL;
 
 	while ((opt = getopt(argc, argv, "HhVGS:A:U:LIObmclkaes:pqrv:u:")) != -1) {
 		switch (opt) {
@@ -159,21 +155,21 @@ struct light_conf *parse_args(int argc, char **argv)
 		case 'v':
 			if (sscanf(optarg, "%i", &level) != 1) {
 				vlog_err("verbosity not recognizable");
-				goto error;
+				return info_help();
 			}
 			if (level < 0 || level > 8) {
 				vlog_err("verbosity must be in range 0-8");
-				goto error;
+				return info_help();
 			}
 			break;
 		case 'u':
 			if (sscanf(optarg, "%" SCNd64, &ctx->usec) != 1) {
 				vlog_err("usecs not recognizable");
-				goto error;
+				return info_help();
 			}
 			break;
 		default:
-			goto error;
+			return info_help();
 		}
 	}
 
@@ -183,7 +179,7 @@ struct light_conf *parse_args(int argc, char **argv)
 	light_defaults(ctx);
 
 	if (!parse_check(ctx->op_mode, ctx->field))
-		goto error;
+		return info_help();
 
 	if (ctx->field != LIGHT_BRIGHTNESS && ctx->usec != 0) {
 		vlog_warning("Resetting time to zero for non-brightness field");
@@ -193,17 +189,13 @@ struct light_conf *parse_args(int argc, char **argv)
 	if (value &&
 	    (ctx->value = value_from_string(ctx->val_mode, value)) < 0) {
 		vlog_err("value not recognizable");
-		goto error;
+		return info_help();
 	}
 
 	if (ctrl && (!path_component(ctrl) || !(ctx->ctrl = strdup(ctrl)))) {
 		vlog_err("can't handle controller: '%s'", ctrl);
-		goto error;
+		return info_help();
 	}
 
-	return ctx;
-error:
-	info_print_help();
-	free(ctx);
-	return NULL;
+	return true;
 }

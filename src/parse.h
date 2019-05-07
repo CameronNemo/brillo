@@ -5,6 +5,6 @@
 
 #include "light.h"
 
-struct light_conf *parse_args(int argc, char **argv);
+bool parse_args(int argc, char **argv, struct light_conf *ctx);
 
 #endif /* PARSE_H */

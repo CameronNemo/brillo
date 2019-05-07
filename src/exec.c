@@ -244,8 +244,7 @@ bool exec_op(struct light_conf *conf)
 			conf->val_mode, conf->field);
 		fprintf(stderr,
 			"Invalid combination of commandline arguments.\n");
-		info_print_help();
-		return false;
+		return info_help();
 	}
 }
 

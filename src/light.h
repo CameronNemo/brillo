@@ -61,7 +61,7 @@ struct light_conf {
 	int64_t cached_max;
 };
 
-static inline void __lightburn__(struct light_conf **conf)
+static inline void light_free(struct light_conf **conf)
 {
 	if (!(*conf))
 		return;
@@ -71,7 +71,7 @@ static inline void __lightburn__(struct light_conf **conf)
 	free(*conf);
 }
 
-#define __lightburn __attribute__((cleanup(__lightburn__)))
+#define light_t __attribute__((cleanup(light_free))) struct light_conf *
 
 struct light_conf *light_new(void);
 void light_defaults(struct light_conf *conf);

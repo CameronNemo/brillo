@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "light.h"
 #include "vlog.h"
@@ -10,9 +11,12 @@
 
 int main(int argc, char **argv)
 {
-	__lightburn struct light_conf *ctx = NULL;
+	light_t ctx = light_new();
 
-	if (!(ctx = parse_args(argc, argv))) {
+	if (!ctx)
+		return EXIT_FAILURE;
+
+	if (!(parse_args(argc, argv, ctx))) {
 		vlog_err("arguments parsing failed");
 		return 2;
 	}

@@ -33,6 +33,19 @@ bool info_list(char *prefix)
 }
 
 /**
+ * info_help:
+ *
+ * Prints help dialog to standard output.
+ *
+ * Returns: false
+ **/
+bool info_help()
+{
+	printf("Usage: %s [options] [operation [value]]\n", PROG);
+	return false;
+}
+
+/**
  * info_print:
  * @op:		operation mode to use
  * @prefix:	sysfs prefix to hand to list controllers
@@ -48,11 +61,11 @@ bool info_print(LIGHT_OP_MODE op, char *prefix, bool exec)
 	switch (op) {
 		case LIGHT_PRINT_HELP:
 			if (exec)
-				info_print_help();
+				info_help();
 			break;
 		case LIGHT_PRINT_VERSION:
 			if (exec)
-				info_print_version();
+				printf("%s %s\n", PROG, VERSION);;
 			break;
 		case LIGHT_LIST_CTRL:
 			if (exec)
@@ -63,25 +76,4 @@ bool info_print(LIGHT_OP_MODE op, char *prefix, bool exec)
 	}
 
 	return true;
-}
-
-/**
- * info_print_version:
- *
- * Prints version and copyright information to standard output.
- **/
-void info_print_version()
-{
-	printf("%s %s\n", PROG, VERSION);
-}
-
-/**
- * info_print_help:
- *
- * Prints help dialog to standard output.
- **/
-void *info_print_help()
-{
-	printf("Usage: %s [options] [operation [value]]\n", PROG);
-	return NULL;
 }

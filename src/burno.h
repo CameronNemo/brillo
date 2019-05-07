@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: 0BSD */
 
-#ifndef __BURNO_H
-#define __BURNO_H
+#ifndef BURN_H
+#define BURN_H
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -9,31 +9,31 @@
 #include <sys/types.h>
 #include <dirent.h>
 
-static inline void __burno__(void *o)
+static inline void burn__o(void *o)
 {
 	free(*(void **)o);
 }
 
-static inline void __burnfd__(int *fd)
+static inline void burn__fd(int *fd)
 {
 	close(*fd);
 }
 
-static inline void __burnfile__(FILE **file)
+static inline void burn__file(FILE **file)
 {
 	if (*file)
 		fclose(*file);
 }
 
-static inline void __burndir__(DIR **dir)
+static inline void burn__dir(DIR **dir)
 {
 	if (*dir)
 		closedir(*dir);
 }
 
-#define __burno 	__attribute__((cleanup(__burno__)))
-#define __burnfd	__attribute__((cleanup(__burnfd__)))
-#define __burnfile	__attribute__((cleanup(__burnfile__)))
-#define __burndir	__attribute__((cleanup(__burndir__)))
+#define burn_o __attribute__((cleanup(burn__o)))
+#define burn_fd __attribute__((cleanup(burn__fd))) int
+#define burn_dir __attribute__((cleanup(burn__dir))) DIR *
+#define burn_file __attribute__((cleanup(burn__file))) FILE *
 
-#endif /* __BURNO_H */
+#endif /* BURN_H */

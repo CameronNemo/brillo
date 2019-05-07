@@ -19,9 +19,7 @@
  **/
 bool info_list(char *prefix)
 {
-	__burndir DIR *dir;
-
-	dir = opendir(prefix);
+	burn_dir dir = opendir(prefix);
 
 	if (!dir) {
 		vlog_err("opendir: %m");

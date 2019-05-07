@@ -55,7 +55,7 @@ char *ctrl_iter_next(DIR * dir)
 bool ctrl_auto(struct light_conf *conf)
 {
 	char *next, *prev;
-	__burndir DIR *dir = opendir(conf->sys_prefix);
+	burn_dir dir = opendir(conf->sys_prefix);
 
 	if (!dir) {
 		vlog_err("opendir: %m");

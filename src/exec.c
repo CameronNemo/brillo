@@ -44,7 +44,7 @@ static int64_t exec_get_max(struct light_conf *conf)
  **/
 static int exec_open(struct light_conf *conf, LIGHT_FIELD field, int flags)
 {
-	__burno char *path = light_path_new(conf, field);
+	burn_o char *path = light_path_new(conf, field);
 	return path ? file_open(path, flags) : -1;
 }
 
@@ -104,7 +104,7 @@ static bool exec_get(struct light_conf *conf)
 static bool exec_set(struct light_conf *conf)
 {
 	int64_t new_value, curr_value, new_raw, max, curr_raw = -1, mincap = 0;
-	__burnfd int fd;
+	burn_fd fd;
 
 	if (conf->field == LIGHT_MIN_CAP)
 		curr_raw = exec_get_min(conf);
@@ -172,7 +172,7 @@ static bool exec_set(struct light_conf *conf)
 bool exec_all(struct light_conf *conf)
 {
 	bool ret = true;
-	__burndir DIR *dir = opendir(conf->sys_prefix);
+	burn_dir dir = opendir(conf->sys_prefix);
 
 	if (!dir) {
 		vlog_err("opendir: %m");
@@ -311,7 +311,7 @@ char *light_path_new(struct light_conf *conf, LIGHT_FIELD type)
  **/
 int64_t light_fetch(struct light_conf *conf, LIGHT_FIELD field)
 {
-	__burno char *path = light_path_new(conf, field);
+	burn_o char *path = light_path_new(conf, field);
 	return path ? file_read(path) : -ENOMEM;
 }
 
@@ -329,7 +329,7 @@ int64_t light_fetch(struct light_conf *conf, LIGHT_FIELD field)
 static bool exec_write(struct light_conf *conf, LIGHT_FIELD field,
 		int64_t val_old, int64_t val_new)
 {
-	__burnfd int fd = exec_open(conf, field, O_WRONLY);
+	burn_fd fd = exec_open(conf, field, O_WRONLY);
 	return fd > 0 ? file_write(fd, val_old, val_new, conf->usec) : false;
 }
 

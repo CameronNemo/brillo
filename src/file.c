@@ -175,7 +175,7 @@ int64_t file_read(const char *const path)
 {
 	int64_t value;
 
-	__burnfile FILE *file = fopen(path, "r");
+	burn_file file = fopen(path, "r");
 
 	if (!file)
 		return -errno;

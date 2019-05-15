@@ -101,7 +101,7 @@ build/$(VENDOR).$(PROG).policy: contrib/polkit.in
 
 install.polkit: build/$(VENDOR).$(PROG).policy
 	install -d $(DESTDIR)$(PKEDIR)
-	install -m 0640 -t $(DESTDIR)$(PKEDIR) $^
+	install -m 0644 -t $(DESTDIR)$(PKEDIR) $^
 
 dist:
 

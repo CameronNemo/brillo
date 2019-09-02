@@ -1,13 +1,10 @@
 image:
-        name: cameronnemo/gitlab-ci-brillo
+        name: cameronnemo/gitlab-ci-brillo-musl
         entrypoint: [""]
 
 stages:
         - lint
         - build
-
-before_script:
-        - xbps-install -Syu
 
 cppcheck:
         stage: lint
@@ -15,4 +12,11 @@ cppcheck:
 
 make:
         stage: build
+        script: make
+
+make-glibc:
+        stage: build
+        image:
+                name: cameronnemo/gitlab-ci-brillo
+                entrypoint: [""]
         script: make

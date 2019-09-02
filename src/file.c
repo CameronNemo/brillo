@@ -91,7 +91,10 @@ static bool file_rewrite(int fd, int64_t val)
 	}
 
 	/* flush all data to disk so the change takes effect */
-	fflush(NULL);
+	if (fsync(fd) != 0) {
+		vlog_err("fsync: %m");
+		return false;
+	}
 
 	return true;
 }

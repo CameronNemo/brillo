@@ -13,7 +13,7 @@
 
 #define PARSE_SET(str, box, item) \
 	if (box != 0) { \
-		fprintf(stderr, str" arguments can not be used in conjunction.\n"); \
+		fprintf(stderr, "%s arguments can not be used in conjunction.\n", str); \
 		return info_help(); \
 	} else { \
 		box = item; \

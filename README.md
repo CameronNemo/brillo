@@ -17,6 +17,10 @@ For detailed usage, please refer to the [man page](doc/man/brillo.1.md).
 Installation
 ------------
 
+[![Packaging status](https://repology.org/badge/vertical-allrepos/brillo.svg)](https://repology.org/project/brillo/versions)
+
+### From source
+
 Building the manpage requires `go-md2man`.
 
 To build and install the binary, manpage, and udev rule:

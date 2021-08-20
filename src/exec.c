@@ -104,15 +104,15 @@ static bool exec_get(struct light_conf *conf)
 static bool exec_set(struct light_conf *conf)
 {
 	int64_t new_value, curr_value, new_raw, max, curr_raw = -1, mincap = 0;
-	burn_fd fd;
+	burn_fd fd = exec_open(conf, conf->field, O_WRONLY);
+
+	if (fd < 0)
+		return false;
 
 	if (conf->field == LIGHT_MIN_CAP)
 		curr_raw = exec_get_min(conf);
 	else
 		mincap = exec_get_min(conf);
-
-	if ((fd = exec_open(conf, conf->field, O_WRONLY)) < 0)
-		return false;
 
 	if (conf->field != LIGHT_MIN_CAP)
 		curr_raw = light_fetch(conf, conf->field);

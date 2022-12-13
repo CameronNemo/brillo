@@ -1,7 +1,7 @@
 PROG := brillo
 DESC := Control the brightness of backlight and keyboard LED devices
 VENDOR := com.gitlab.CameronNemo
-VERSION := 1.4.10
+VERSION := 1.4.11
 
 GOMD2MAN ?= go-md2man
 GROUP ?= video

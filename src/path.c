@@ -24,7 +24,7 @@ bool path_component(const char *c) {
  *
  * Returns: pointer to initialized path string, or NULL on failure
  **/
-char *path_new()
+char *path_new(void)
 {
 	char *p;
 

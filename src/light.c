@@ -13,7 +13,7 @@
  *
  * Returns: light configuration object, or NULL on memory error
  **/
-struct light_conf *light_new()
+struct light_conf *light_new(void)
 {
 	struct light_conf *conf = NULL;
 

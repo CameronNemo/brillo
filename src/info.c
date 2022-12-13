@@ -39,7 +39,7 @@ bool info_list(char *prefix)
  *
  * Returns: false
  **/
-bool info_help()
+bool info_help(void)
 {
 	printf("Usage: %s [options] [operation [value]]\n", PROG);
 	return false;

@@ -33,9 +33,12 @@ override CFLAGS += \
 endif
 
 override CFLAGS += \
-	-std=c99 -D_XOPEN_SOURCE=700 -pedantic \
-	-Wall -Werror -Wextra \
+	-std=c99 -D_XOPEN_SOURCE=700 \
 	-DPROG='"$(PROG)"' -DVERSION='"$(VERSION)"'
+
+ifeq ($(WERROR),1)
+override CFLAGS += -pedantic -Wall -Werror -Wextra
+endif
 
 override LDLIBS += -lm
 
